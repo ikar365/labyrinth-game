@@ -8,14 +8,121 @@
 </head>
 <body>
     <script type="module">
-        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
-        import { CSG } from 'https://cdn.jsdelivr.net/npm/three-csg-ts@2.1.0/dist/three-csg-ts.js';
-        import { createScene, animate } from './js/scripts.js';
+        import * as THREE from './libs/three.module.js';
+        import { CSG } from './libs/three-csg.js';
 
-        document.addEventListener('DOMContentLoaded', () => {
-            createScene();
+        let scene, camera, renderer;
+        let player, enemy;
+        let playerSpeed = 0.1;
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 10, 20);
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Floor
+            const floorGeometry = new THREE.PlaneGeometry(1920, 1080);
+            const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = - Math.PI / 2;
+            scene.add(floor);
+
+            // Walls
+            const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
+            const wallHeight = 50;
+            const wallGeometry = new THREE.PlaneGeometry(1920, wallHeight);
+            const wall1 = new THREE.Mesh(wallGeometry, wallMaterial);
+            wall1.position.set(0, wallHeight / 2, -1080 / 2);
+            scene.add(wall1);
+
+            const wall2 = wall1.clone();
+            wall2.position.set(0, wallHeight / 2, 1080 / 2);
+            wall2.rotation.y = Math.PI;
+            scene.add(wall2);
+
+            const wall3 = new THREE.Mesh(new THREE.PlaneGeometry(1080, wallHeight), wallMaterial);
+            wall3.position.set(-1920 / 2, wallHeight / 2, 0);
+            wall3.rotation.y = Math.PI / 2;
+            scene.add(wall3);
+
+            const wall4 = wall3.clone();
+            wall4.position.set(1920 / 2, wallHeight / 2, 0);
+            wall4.rotation.y = -Math.PI / 2;
+            scene.add(wall4);
+
+            // Roof
+            const roofGeometry = new THREE.PlaneGeometry(1920, 1080);
+            const roofMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
+            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+            roof.rotation.x = Math.PI / 2;
+            roof.position.y = wallHeight;
+            scene.add(roof);
+
+            // Player
+            const playerGeometry = new THREE.SphereGeometry(10, 32, 32);
+            const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+            player = new THREE.Mesh(playerGeometry, playerMaterial);
+            player.position.set(0, 10, 0);
+            scene.add(player);
+
+            // Enemy
+            const enemyGeometry = new THREE.SphereGeometry(25, 32, 32);
+            const enemyMaterial = new THREE.MeshBasicMaterial({ color: 0xffa500 });
+            enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
+            enemy.position.set(100, 25, 100);
+            scene.add(enemy);
+
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(1, 1, 1).normalize();
+            scene.add(directionalLight);
+
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('keydown', onDocumentKeyDown, false);
+
             animate();
-        });
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onDocumentKeyDown(event) {
+            const keyCode = event.which;
+            if (keyCode === 87) { // W
+                player.position.z -= playerSpeed;
+            } else if (keyCode === 83) { // S
+                player.position.z += playerSpeed;
+            } else if (keyCode === 65) { // A
+                player.position.x -= playerSpeed;
+            } else if (keyCode === 68) { // D
+                player.position.x += playerSpeed;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Enemy chases player
+            const direction = new THREE.Vector3();
+            direction.subVectors(player.position, enemy.position).normalize();
+            enemy.position.addScaledVector(direction, playerSpeed / 2);
+
+            renderer.render(scene, camera);
+        }
+
+        init();
     </script>
 </body>
 </html>
