@@ -4,6 +4,7 @@ import { Node } from './Node.js';
 import { Polygon } from './Polygon.js';
 import { Vector } from './Vector.js';
 import { Vertex } from './Vertex.js';
+import { Plane } from './Plane.js';
 
 /**
  * Holds a binary space partition tree representing a 3D solid. Two solids can
@@ -50,13 +51,7 @@ class CSG {
                 const nz = normalattr.array[vp + 2];
                 const u = uvattr?.array[vt];
                 const v = uvattr?.array[vt + 1];
-                vertices[j] = new Vertex(
-                    new Vector(x, y, z),
-                    new Vector(nx, ny, nz),
-                    new Vector(u, v, 0),
-                    colorattr &&
-                    new Vector(colorattr.array[vp], colorattr.array[vp + 1], colorattr.array[vp + 2])
-                );
+                vertices[j] = new Vertex(new Vector(x, y, z), new Vector(nx, ny, nz), new Vector(u, v, 0), colorattr && new Vector(colorattr.array[vp], colorattr.array[vp + 1], colorattr.array[vp + 2]));
             }
             if (objectIndex === undefined && grps && grps.length > 0) {
                 for (const grp of grps) {
@@ -189,9 +184,7 @@ class CSG {
 
     clone() {
         const csg = new CSG();
-        csg.polygons = this.polygons
-            .map((p) => p.clone())
-            .filter((p) => Number.isFinite(p.plane.w));
+        csg.polygons = this.polygons.map((p) => p.clone()).filter((p) => Number.isFinite(p.plane.w));
         return csg;
     }
 
