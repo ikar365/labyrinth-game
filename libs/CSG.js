@@ -247,6 +247,6 @@ var CSG = /** @class */ (function () {
     };
     return CSG;
 }());
-//exports.CSG = CSG;
+exports.CSG = CSG;
 
 export { CSG };
