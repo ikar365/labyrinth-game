@@ -1,5 +1,5 @@
-import * as THREE from '../libs/three.module.js';
-import { CSG } from '../libs/three-csg.js';
+import * as THREE from './libs/three.module.js';
+import { CSG } from './libs/three-csg.js';
 
 let scene, camera, renderer, blueBall, orangeBall;
 
