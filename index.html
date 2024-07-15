@@ -4,11 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Labyrinth Game</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Labyrinth Game</h1>
-    <div id="game-container"></div>
-    <script type="module" src="js/scripts.js"></script>
+    <script type="module">
+        import * as THREE from './libs/three.module.js';
+        import { CSG } from './libs/three-csg.js';
+        import { createScene, animate } from './script.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createScene();
+            animate();
+        });
+    </script>
 </body>
 </html>
