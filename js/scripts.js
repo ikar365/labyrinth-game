@@ -165,6 +165,8 @@ function animate() {
     const cameraOffset = new THREE.Vector3(0, 50, 200);
     const newCameraPosition = player.position.clone().add(cameraOffset);
     camera.position.lerp(newCameraPosition, 0.05);
+
+    // This ensures the camera's target is updated to the player's position without changing the current camera angle
     controls.target.set(player.position.x, player.position.y, player.position.z);
     controls.update();
 
