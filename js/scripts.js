@@ -1,7 +1,7 @@
 // scripts.js
-import * as THREE from './libs/three.module.js';
-import { OrbitControls } from './libs/OrbitControls.js';
-import { CSG } from './libs/CSG.js';
+import * as THREE from '../libs/three.module.js';
+import { OrbitControls } from '../libs/OrbitControls.js';
+import { CSG } from '../libs/CSG.js';
 
 let scene, camera, renderer, controls;
 let player, enemy, redBalls = [];
