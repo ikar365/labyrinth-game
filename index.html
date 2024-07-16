@@ -233,7 +233,7 @@
                 // Update particles
                 particles.forEach((particle, index) => {
                     particle.position.add(particle.velocity);
-                    if (particle.position.distanceTo(player.position) > 5000) {
+                    if (particle.position.distanceTo(player.position) > 100) {
                         scene.remove(particle);
                         particles.splice(index, 1);
                     }
