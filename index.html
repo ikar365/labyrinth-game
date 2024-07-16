@@ -14,8 +14,8 @@
 
         let scene, camera, renderer, controls;
         let player, enemy;
-        let playerSpeed = 0.9 * 1.25; // Increased by 25%
-        let enemySpeed = 0.45 * 1.25; // Increased by 25%
+        let playerSpeed = 0.9;
+        let enemySpeed = playerSpeed * 0.95; // 95% of player speed
         let lastBirthTime = 0;
         let redBalls = [];
         let particles = [];
@@ -87,13 +87,12 @@
 
             // Enemy
             const enemyGeometry = new THREE.SphereGeometry(25, 32, 32);
-            const enemyMaterial = new THREE.MeshPhongMaterial({
+            const enemyMaterial = new THREE.MeshPhysicalMaterial({
                 color: 0xffa500,
-                emissive: 0x111111,
-                shininess: 100,
-                transparent: true,
-                opacity: 0.8,
-                refractionRatio: 0.98
+                metalness: 0.5,
+                roughness: 0.1,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.1,
             });
             enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
             enemy.position.set(100, 25, 100);
