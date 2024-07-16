@@ -14,7 +14,12 @@
 
         let scene, camera, renderer, controls;
         let player, enemy;
-        let playerSpeed = 2.7;
+        let playerSpeed = 1.35;
+        let enemySpeed = 0.5;
+        let lastBirthTime = 0;
+        let redBalls = [];
+        let particles = [];
+        let clock = new THREE.Clock();
 
         function init() {
             scene = new THREE.Scene();
@@ -128,22 +133,89 @@
                 player.position.y += playerSpeed;
             } else if (keyCode === 88) { // X
                 player.position.y -= playerSpeed;
+            } else if (keyCode === 70) { // F (shoot)
+                shootParticle();
             }
+        }
+
+        function shootParticle() {
+            const particleGeometry = new THREE.SphereGeometry(1.5, 16, 16);
+            const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+            particle.position.copy(player.position);
+            particle.velocity = new THREE.Vector3(0, 0, -2).applyQuaternion(camera.quaternion);
+            particles.push(particle);
+            scene.add(particle);
         }
 
         function animate() {
             requestAnimationFrame(animate);
 
+            const delta = clock.getDelta();
+
             // Enemy chases player
             const direction = new THREE.Vector3();
             direction.subVectors(player.position, enemy.position).normalize();
-            enemy.position.addScaledVector(direction, playerSpeed / 2);
+            enemy.position.addScaledVector(direction, enemySpeed * delta);
+
+            // Check for enemy touching player
+            if (enemy.position.distanceTo(player.position) < 35) {
+                const currentTime = clock.getElapsedTime();
+                if (currentTime - lastBirthTime > 30) {
+                    lastBirthTime = currentTime;
+                    giveBirthToRedBall();
+                }
+            }
+
+            // Red balls chase player
+            redBalls.forEach((redBall, index) => {
+                const redDirection = new THREE.Vector3();
+                redDirection.subVectors(player.position, redBall.position).normalize();
+                redBall.position.addScaledVector(redDirection, playerSpeed * 1.1 * delta);
+
+                // Check for red ball touching player
+                if (redBall.position.distanceTo(player.position) < redBall.geometry.parameters.radius + player.geometry.parameters.radius) {
+                    player.geometry.parameters.radius -= 1;
+                    player.scale.setScalar(player.geometry.parameters.radius / 10);
+                    if (player.geometry.parameters.radius < 5) {
+                        // Game Over
+                        window.alert('Game Over');
+                        location.reload();
+                    }
+                }
+            });
+
+            // Move particles and check for collisions with red balls
+            particles.forEach((particle, particleIndex) => {
+                particle.position.add(particle.velocity);
+                redBalls.forEach((redBall, redBallIndex) => {
+                    if (particle.position.distanceTo(redBall.position) < redBall.geometry.parameters.radius + 1.5) {
+                        redBall.geometry.parameters.radius -= 1;
+                        redBall.scale.setScalar(redBall.geometry.parameters.radius / 15);
+                        if (redBall.geometry.parameters.radius < 1) {
+                            scene.remove(redBall);
+                            redBalls.splice(redBallIndex, 1);
+                        }
+                        scene.remove(particle);
+                        particles.splice(particleIndex, 1);
+                    }
+                });
+            });
 
             // Update camera to follow player
             controls.target.copy(player.position);
             controls.update();
 
             renderer.render(scene, camera);
+        }
+
+        function giveBirthToRedBall() {
+            const redBallGeometry = new THREE.SphereGeometry(15, 32, 32);
+            const redBallMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0x111111, shininess: 100 });
+            const redBall = new THREE.Mesh(redBallGeometry, redBallMaterial);
+            redBall.position.copy(enemy.position);
+            redBalls.push(redBall);
+            scene.add(redBall);
         }
 
         init();
