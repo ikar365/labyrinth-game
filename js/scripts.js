@@ -14,8 +14,8 @@
 
         let scene, camera, renderer, controls;
         let player, enemy;
-        let playerSpeed = 0.5; // Adjusted player speed
-        let enemySpeed = playerSpeed * 0.95;
+        let playerSpeed = 1.25; // Adjusted player speed
+        let enemySpeed = playerSpeed * 0.4;
         let redBallSpeed = playerSpeed * 1.25;
         let lastBirthTime = 0;
         let particles = [];
@@ -50,7 +50,7 @@
             scene.add(floor);
 
             // Walls
-            const wallTexture = new THREE.TextureLoader().load('dark-concrete-wall.jpg');
+            const wallTexture = new THREE.TextureLoader().load('darkgreentiled-wall.jpg');
             wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
             wallTexture.repeat.set(50, 10);
 
