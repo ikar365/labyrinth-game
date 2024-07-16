@@ -14,19 +14,15 @@
 
         let scene, camera, renderer, controls;
         let player, enemy;
-        let playerSpeed = 1.5; // Adjusted player speed
-        let enemySpeed = playerSpeed * 0.5;
-        let redBallSpeed = playerSpeed * 1.25;
-        let lastBirthTime = 0;
-        let particles = [];
-        let dummy;
+        let playerSpeed = 0.675;
+        let enemySpeed = 0.95 * playerSpeed;
+        let enemyCanMove = true;
 
         function init() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x333444);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-            camera.position.set(0, 50, 200); // Initial position of the camera
 
             renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -38,10 +34,6 @@
             controls.screenSpacePanning = false;
             controls.maxPolarAngle = Math.PI / 2;
             controls.update();
-
-            // Dummy object to follow the player
-            dummy = new THREE.Object3D();
-            scene.add(dummy);
 
             // Floor
             const floorTexture = new THREE.TextureLoader().load('grunge-texture.jpg');
@@ -55,7 +47,7 @@
             scene.add(floor);
 
             // Walls
-            const wallTexture = new THREE.TextureLoader().load('darkgreentiled-wall.jpg');
+            const wallTexture = new THREE.TextureLoader().load('dark-concrete-wall.jpg');
             wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
             wallTexture.repeat.set(50, 10);
 
@@ -91,12 +83,10 @@
 
             // Enemy
             const enemyGeometry = new THREE.SphereGeometry(25, 32, 32);
-            const enemyMaterial = new THREE.MeshPhysicalMaterial({
+            const enemyMaterial = new THREE.MeshPhongMaterial({
                 color: 0xffa500,
                 emissive: 0x111111,
-                roughness: 0.1,
-                metalness: 0.5,
-                reflectivity: 1
+                shininess: 100
             });
             enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
             enemy.position.set(100, 25, 100);
@@ -136,48 +126,27 @@
                 player.position.y += playerSpeed;
             } else if (keyCode === 88) { // X
                 player.position.y -= playerSpeed;
-            } else if (keyCode === 70) { // F
-                shootParticle();
             }
-        }
-
-        function shootParticle() {
-            const particleGeometry = new THREE.SphereGeometry(3, 16, 16);
-            const particleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            const particle = new THREE.Mesh(particleGeometry, particleMaterial);
-            particle.position.copy(player.position);
-            particle.velocity = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion).normalize().multiplyScalar(2);
-            scene.add(particle);
-            particles.push(particle);
         }
 
         function animate() {
             requestAnimationFrame(animate);
 
-            // Update particles
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const particle = particles[i];
-                particle.position.add(particle.velocity);
-
-                // Remove particle if it goes too far
-                if (particle.position.distanceTo(player.position) > 200) {
-                    scene.remove(particle);
-                    particles.splice(i, 1);
-                }
+            if (enemyCanMove) {
+                // Enemy chases player
+                const direction = new THREE.Vector3();
+                direction.subVectors(player.position, enemy.position).normalize();
+                enemy.position.addScaledVector(direction, enemySpeed);
             }
 
-            // Enemy chases player
-            const direction = new THREE.Vector3();
-            direction.subVectors(player.position, enemy.position).normalize();
-            enemy.position.addScaledVector(direction, enemySpeed);
+            // Collision detection
+            const distance = player.position.distanceTo(enemy.position);
+            if (distance < 35) { // 10 (player radius) + 25 (enemy radius)
+                enemyCanMove = false;
+            }
 
-            // Update dummy position to follow the player
-            dummy.position.copy(player.position);
-
-            // Ensure the camera is always following the dummy object, but doesn't override the controls
-            controls.target.copy(dummy.position);
+            controls.target.copy(player.position);
             controls.update();
-
             renderer.render(scene, camera);
         }
 
