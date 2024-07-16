@@ -1,22 +1,20 @@
-// scripts.js
-import * as THREE from '../libs/three.module.js';
-import { OrbitControls } from '../libs/OrbitControls.js';
-import { CSG } from '../libs/CSG.js';
+import * as THREE from './libs/three.module.js';
+import { OrbitControls } from './libs/OrbitControls.js';
+import { CSG } from './libs/CSG.js';
 
 let scene, camera, renderer, controls;
-let player, enemy, redBalls = [];
+let player, enemy;
 let playerSpeed = 0.9;
-let enemySpeed = playerSpeed * 0.14; // 14% of playerSpeed
-let redBallSpeed = playerSpeed * 1.25;
-let redBallSpawnTime = 15000; // 15 seconds
-let lastRedBallSpawnTime = 0;
+let enemySpeed = playerSpeed * 0.34;
+let redBalls = [];
+let canSpawnRedBall = true;
+let firstSpawn = true;
 
 function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x333444);
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-    camera.position.set(0, 50, 200);
 
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -33,7 +31,6 @@ function init() {
     const floorTexture = new THREE.TextureLoader().load('grunge-texture.jpg');
     floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
     floorTexture.repeat.set(50, 50);
-    floorTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
     const floorGeometry = new THREE.PlaneGeometry(5000, 5000);
     const floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture, transparent: true, opacity: 0.5 });
@@ -82,7 +79,6 @@ function init() {
         color: 0xffa500,
         emissive: 0x111111,
         shininess: 100,
-        refractionRatio: 0.98
     });
     enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
     enemy.position.set(100, 25, 100);
@@ -122,33 +118,55 @@ function onDocumentKeyDown(event) {
         player.position.y += playerSpeed;
     } else if (keyCode === 88) { // X
         player.position.y -= playerSpeed;
+    } else if (keyCode === 70) { // F
+        shootParticle();
     }
 }
 
-function createRedBall() {
-    const redGeometry = new THREE.SphereGeometry(15, 32, 32);
-    const redMaterial = new THREE.MeshPhongMaterial({
-        color: 0xff0000,
-        emissive: 0x550000,
-        shininess: 100
-    });
-    const redBall = new THREE.Mesh(redGeometry, redMaterial);
-    redBall.position.copy(enemy.position);
-    scene.add(redBall);
-    redBalls.push(redBall);
+function shootParticle() {
+    const particleGeometry = new THREE.SphereGeometry(3, 8, 8);
+    const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+
+    particle.position.copy(player.position);
+    particle.velocity = new THREE.Vector3().subVectors(enemy.position, player.position).normalize().multiplyScalar(5);
+
+    scene.add(particle);
+
+    const animateParticle = () => {
+        if (particle) {
+            particle.position.add(particle.velocity);
+
+            // Check for collision with red balls
+            redBalls.forEach((redBall, index) => {
+                if (particle.position.distanceTo(redBall.position) < 13) { // Adjust the collision distance as needed
+                    redBall.scale.multiplyScalar(0.9);
+                    scene.remove(particle);
+
+                    if (redBall.scale.x < 0.1) {
+                        scene.remove(redBall);
+                        redBalls.splice(index, 1);
+                    }
+                }
+            });
+
+            // Continue animating if particle is still within bounds
+            if (particle && Math.abs(particle.position.x) < 2500 && Math.abs(particle.position.y) < 2500 && Math.abs(particle.position.z) < 2500) {
+                requestAnimationFrame(animateParticle);
+            } else {
+                scene.remove(particle);
+            }
+        }
+    };
+
+    animateParticle();
 }
 
 function animate() {
     requestAnimationFrame(animate);
 
-    const time = performance.now();
-    if (time - lastRedBallSpawnTime > redBallSpawnTime && enemy.position.distanceTo(player.position) < 30) {
-        createRedBall();
-        lastRedBallSpawnTime = time;
-    }
-
     // Enemy chases player
-    if (enemy.position.distanceTo(player.position) > 30) {
+    if (enemy.position.distanceTo(player.position) > 25) {
         const direction = new THREE.Vector3();
         direction.subVectors(player.position, enemy.position).normalize();
         enemy.position.addScaledVector(direction, enemySpeed);
@@ -156,17 +174,57 @@ function animate() {
 
     // Red balls chase player
     redBalls.forEach(redBall => {
-        const direction = new THREE.Vector3();
-        direction.subVectors(player.position, redBall.position).normalize();
-        redBall.position.addScaledVector(direction, redBallSpeed);
+        if (redBall.position.distanceTo(player.position) > 10) {
+            const direction = new THREE.Vector3();
+            direction.subVectors(player.position, redBall.position).normalize();
+            redBall.position.addScaledVector(direction, playerSpeed * 1.25);
+        }
     });
 
-    // Update camera to follow player without changing the angle
-    const playerPos = new THREE.Vector3(player.position.x, player.position.y, player.position.z);
-    controls.target.copy(playerPos);
-    controls.update();
+    // Collision detection between player and red balls
+    redBalls.forEach((redBall, index) => {
+        if (player.position.distanceTo(redBall.position) < 15) { // Adjust the collision distance as needed
+            player.scale.multiplyScalar(0.9);
+            redBall.scale.multiplyScalar(1.1);
 
+            if (player.scale.x < 0.1) {
+                // Game over logic
+                scene.remove(player);
+                enemy.scale.multiplyScalar(1.1);
+                enemy.position.set(0, 0, 0); // Move enemy to center for celebration
+                redBalls.forEach(ball => ball.position.set(Math.random() * 1000 - 500, 0, Math.random() * 1000 - 500));
+                alert("Game Over");
+            }
+        }
+    });
+
+    controls.update();
     renderer.render(scene, camera);
+}
+
+function spawnRedBall() {
+    const redBallGeometry = new THREE.SphereGeometry(15, 32, 32);
+    const redBallMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0x111111, shininess: 100 });
+    const redBall = new THREE.Mesh(redBallGeometry, redBallMaterial);
+
+    redBall.position.copy(player.position);
+    redBalls.push(redBall);
+    scene.add(redBall);
+}
+
+function handleCollision() {
+    if (firstSpawn) {
+        setTimeout(() => {
+            spawnRedBall();
+            firstSpawn = false;
+        }, 15000);
+    } else if (canSpawnRedBall) {
+        spawnRedBall();
+        canSpawnRedBall = false;
+        setTimeout(() => {
+            canSpawnRedBall = true;
+        }, 15000);
+    }
 }
 
 init();
