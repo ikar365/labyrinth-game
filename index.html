@@ -19,7 +19,7 @@
         let redBallSpeed = playerSpeed * 1.25;
         let lastBirthTime = 0;
         let particles = [];
-        let cameraOffset = new THREE.Vector3(0, 50, 200);
+        let dummy;
 
         function init() {
             scene = new THREE.Scene();
@@ -38,6 +38,10 @@
             controls.screenSpacePanning = false;
             controls.maxPolarAngle = Math.PI / 2;
             controls.update();
+
+            // Dummy object to follow the player
+            dummy = new THREE.Object3D();
+            scene.add(dummy);
 
             // Floor
             const floorTexture = new THREE.TextureLoader().load('grunge-texture.jpg');
@@ -167,11 +171,11 @@
             direction.subVectors(player.position, enemy.position).normalize();
             enemy.position.addScaledVector(direction, enemySpeed);
 
-            // Update camera to follow player without changing the angle
-            const cameraTargetPosition = player.position.clone().add(cameraOffset);
-            camera.position.lerp(cameraTargetPosition, 0.1);
+            // Update dummy position to follow the player
+            dummy.position.copy(player.position);
 
-            controls.target.copy(player.position);
+            // Ensure the camera is always following the dummy object, but doesn't override the controls
+            controls.target.copy(dummy.position);
             controls.update();
 
             renderer.render(scene, camera);
