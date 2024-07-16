@@ -47,7 +47,7 @@
             scene.add(floor);
 
             // Walls
-            const wallTexture = new THREE.TextureLoader().load('dark-concrete-wall.jpg');
+            const wallTexture = new THREE.TextureLoader().load('darkgreentiled-wall.jpg');
             wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
             wallTexture.repeat.set(50, 10);
 
@@ -143,6 +143,9 @@
             const distance = player.position.distanceTo(enemy.position);
             if (distance < 35) { // 10 (player radius) + 25 (enemy radius)
                 enemyCanMove = false;
+                setTimeout(() => {
+                    enemyCanMove = true;
+                }, 5000); // 5 seconds
             }
 
             controls.target.copy(player.position);
