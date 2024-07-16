@@ -21,7 +21,7 @@
             scene.background = new THREE.Color(0x333444);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-            camera.position.set(0, 50, 200);
+            camera.position.set(0, 100, 300);
 
             renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -139,11 +139,7 @@
             direction.subVectors(player.position, enemy.position).normalize();
             enemy.position.addScaledVector(direction, playerSpeed / 2);
 
-            // Update camera position to follow player without changing the angle
-            const cameraOffset = new THREE.Vector3(0, 50, 200);
-            const newCameraPosition = player.position.clone().add(cameraOffset);
-            camera.position.lerp(newCameraPosition, 0.05);
-
+            // Update camera to follow player
             controls.target.copy(player.position);
             controls.update();
 
