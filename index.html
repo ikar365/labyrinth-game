@@ -19,6 +19,7 @@
         let redBallSpeed = playerSpeed * 1.25;
         let lastBirthTime = 0;
         let particles = [];
+        let cameraNeedsUpdate = true; // Flag to update camera position
 
         function init() {
             scene = new THREE.Scene();
@@ -107,6 +108,7 @@
             window.addEventListener('resize', onWindowResize, false);
             document.addEventListener('keydown', onDocumentKeyDown, false);
 
+            updateCameraPosition(); // Initial camera position
             animate();
         }
 
@@ -133,6 +135,7 @@
             } else if (keyCode === 70) { // F
                 shootParticle();
             }
+            cameraNeedsUpdate = true; // Indicate that the camera needs updating
         }
 
         function shootParticle() {
@@ -143,6 +146,13 @@
             particle.velocity = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion).normalize().multiplyScalar(2);
             scene.add(particle);
             particles.push(particle);
+        }
+
+        function updateCameraPosition() {
+            const cameraOffset = new THREE.Vector3(0, 50, 200);
+            const desiredPosition = player.position.clone().add(cameraOffset);
+            camera.position.copy(desiredPosition);
+            camera.lookAt(player.position);
         }
 
         function animate() {
@@ -165,11 +175,11 @@
             direction.subVectors(player.position, enemy.position).normalize();
             enemy.position.addScaledVector(direction, enemySpeed);
 
-            // Update camera to follow player without changing the angle
-            const cameraOffset = new THREE.Vector3(0, 50, 200);
-            const desiredPosition = player.position.clone().add(cameraOffset);
-            camera.position.lerp(desiredPosition, 0.05);
-            camera.lookAt(player.position);
+            // Update camera only if needed
+            if (cameraNeedsUpdate) {
+                updateCameraPosition();
+                cameraNeedsUpdate = false; // Reset flag
+            }
 
             controls.update();
             renderer.render(scene, camera);
