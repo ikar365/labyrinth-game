@@ -14,14 +14,13 @@
 
         let scene, camera, renderer, controls;
         let player, enemy;
-        let playerSpeed = 0.6;
+        let playerSpeed = 0.3;
 
         function init() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x333444);
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 50, 100);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
 
             renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -35,65 +34,60 @@
             controls.update();
 
             // Floor
-            const floorGeometry = new THREE.PlaneGeometry(1920, 1080);
-            const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
+            const floorTexture = new THREE.TextureLoader().load('grunge-texture.jpg');
+            floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+            floorTexture.repeat.set(50, 50);
+
+            const floorGeometry = new THREE.PlaneGeometry(5000, 5000);
+            const floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture });
             const floor = new THREE.Mesh(floorGeometry, floorMaterial);
             floor.rotation.x = - Math.PI / 2;
             scene.add(floor);
 
             // Walls
-            const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
-            const wallHeight = 50;
-            const wallGeometry = new THREE.PlaneGeometry(1920, wallHeight);
+            const wallTexture = new THREE.TextureLoader().load('blue-abstract.jpg');
+            wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
+            wallTexture.repeat.set(50, 10);
+
+            const wallMaterial = new THREE.MeshBasicMaterial({ map: wallTexture });
+            const wallHeight = 5000;
+            const wallGeometry = new THREE.PlaneGeometry(5000, wallHeight);
+
             const wall1 = new THREE.Mesh(wallGeometry, wallMaterial);
-            wall1.position.set(0, wallHeight / 2, -1080 / 2);
+            wall1.position.set(0, wallHeight / 2, -2500);
             scene.add(wall1);
 
             const wall2 = wall1.clone();
-            wall2.position.set(0, wallHeight / 2, 1080 / 2);
+            wall2.position.set(0, wallHeight / 2, 2500);
             wall2.rotation.y = Math.PI;
             scene.add(wall2);
 
-            const wall3 = new THREE.Mesh(new THREE.PlaneGeometry(1080, wallHeight), wallMaterial);
-            wall3.position.set(-1920 / 2, wallHeight / 2, 0);
+            const wall3 = new THREE.Mesh(new THREE.PlaneGeometry(5000, wallHeight), wallMaterial);
+            wall3.position.set(-2500, wallHeight / 2, 0);
             wall3.rotation.y = Math.PI / 2;
             scene.add(wall3);
 
             const wall4 = wall3.clone();
-            wall4.position.set(1920 / 2, wallHeight / 2, 0);
+            wall4.position.set(2500, wallHeight / 2, 0);
             wall4.rotation.y = -Math.PI / 2;
             scene.add(wall4);
 
-            // Roof
-            const roofGeometry = new THREE.PlaneGeometry(1920, 1080);
-            const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
-            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-            roof.rotation.x = Math.PI / 2;
-            roof.position.y = wallHeight;
-            scene.add(roof);
-
             // Player
             const playerGeometry = new THREE.SphereGeometry(10, 32, 32);
-            const playerMaterial = new THREE.MeshPhysicalMaterial({
-                color: 0x0000ff,
-                metalness: 0.5,
-                roughness: 0.5,
-                clearcoat: 1.0,
-                clearcoatRoughness: 0.1
-            });
+            const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff, emissive: 0x111111, shininess: 100 });
             player = new THREE.Mesh(playerGeometry, playerMaterial);
             player.position.set(0, 10, 0);
             scene.add(player);
 
             // Enemy
             const enemyGeometry = new THREE.SphereGeometry(25, 32, 32);
-            const enemyMaterial = new THREE.MeshPhysicalMaterial({
+            const enemyMaterial = new THREE.MeshPhongMaterial({
                 color: 0xffa500,
-                metalness: 0.5,
-                roughness: 0.1,
-                transmission: 1.0,
-                opacity: 0.5,
-                transparent: true
+                emissive: 0x111111,
+                shininess: 100,
+                transparent: true,
+                opacity: 0.8,
+                refractionRatio: 0.98
             });
             enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
             enemy.position.set(100, 25, 100);
@@ -129,6 +123,10 @@
                 player.position.x -= playerSpeed;
             } else if (keyCode === 68) { // D
                 player.position.x += playerSpeed;
+            } else if (keyCode === 32) { // Space
+                player.position.y += playerSpeed;
+            } else if (keyCode === 88) { // X
+                player.position.y -= playerSpeed;
             }
         }
 
@@ -139,6 +137,10 @@
             const direction = new THREE.Vector3();
             direction.subVectors(player.position, enemy.position).normalize();
             enemy.position.addScaledVector(direction, playerSpeed / 2);
+
+            // Update camera to follow player
+            camera.position.lerp(new THREE.Vector3(player.position.x, player.position.y + 50, player.position.z + 200), 0.05);
+            camera.lookAt(player.position);
 
             controls.update();
             renderer.render(scene, camera);
