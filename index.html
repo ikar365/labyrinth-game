@@ -14,7 +14,7 @@
 
         let scene, camera, renderer, controls;
         let player, enemy;
-        let playerSpeed = 0.9;
+        let playerSpeed = 1.25;
 
         const redBalls = [];
         const shootParticles = [];
@@ -210,10 +210,9 @@
 
             // Update camera to follow player without changing the angle
             const cameraOffset = new THREE.Vector3(0, 50, 200);
-            const playerPosition = new THREE.Vector3().copy(player.position);
-            const newCameraPosition = playerPosition.add(cameraOffset);
+            const newCameraPosition = new THREE.Vector3().copy(player.position).add(cameraOffset);
             camera.position.lerp(newCameraPosition, 0.05);
-            camera.lookAt(player.position);
+            controls.target.copy(player.position);
 
             controls.update();
             renderer.render(scene, camera);
