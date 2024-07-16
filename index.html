@@ -206,14 +206,17 @@
                 }
             });
 
+            handleCollisions();
+
             // Update camera to follow player without changing the angle
             const cameraOffset = new THREE.Vector3(0, 50, 200);
-            const newCameraPosition = player.position.clone().add(cameraOffset);
+            const playerPosition = new THREE.Vector3().copy(player.position);
+            const newCameraPosition = playerPosition.add(cameraOffset);
             camera.position.lerp(newCameraPosition, 0.05);
+            camera.lookAt(player.position);
 
             controls.update();
             renderer.render(scene, camera);
-            handleCollisions();
         }
 
         init();
