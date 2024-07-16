@@ -1,4 +1,5 @@
 import * as THREE from './libs/three.module.js';
+import { OrbitControls } from './libs/OrbitControls.js';
 import { CSG } from './libs/CSG.js';
 
 // Create the scene, camera, and renderer
@@ -7,6 +8,14 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
+// Add orbit controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.25;
+controls.screenSpacePanning = false;
+controls.minDistance = 50;
+controls.maxDistance = 500;
 
 // Add lighting
 const ambientLight = new THREE.AmbientLight(0x404040);
@@ -52,8 +61,9 @@ const enemyBall = new THREE.Mesh(enemyGeometry, enemyMaterial);
 enemyBall.position.set(100, 0, 100);
 scene.add(enemyBall);
 
-// Set camera position
-camera.position.set(0, 50, 200);
+// Set initial camera position
+camera.position.set(0, 150, 400);
+controls.update();
 
 // Handle keyboard input
 const keys = {};
@@ -61,7 +71,7 @@ window.addEventListener('keydown', (e) => keys[e.key] = true);
 window.addEventListener('keyup', (e) => keys[e.key] = false);
 
 // Update player position based on input
-const moveSpeed = 2;
+const moveSpeed = 4;
 function updatePlayerPosition() {
     if (keys['w']) playerBall.position.z -= moveSpeed;
     if (keys['s']) playerBall.position.z += moveSpeed;
@@ -70,7 +80,7 @@ function updatePlayerPosition() {
 }
 
 // Simple enemy AI to chase the player
-const enemySpeed = 1.5;
+const enemySpeed = 2;
 function updateEnemyPosition() {
     const direction = new THREE.Vector3(
         playerBall.position.x - enemyBall.position.x,
@@ -112,6 +122,7 @@ function animate() {
     updatePlayerPosition();
     updateEnemyPosition();
     detectCollision();
+    controls.update();
     renderer.render(scene, camera);
 }
 animate();
