@@ -142,7 +142,7 @@
             const cameraOffset = new THREE.Vector3(0, 50, 200);
             const newCameraPosition = player.position.clone().add(cameraOffset);
             camera.position.lerp(newCameraPosition, 0.05);
-            camera.lookAt(player.position);
+            controls.target.copy(player.position);
 
             controls.update();
             renderer.render(scene, camera);
