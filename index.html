@@ -14,12 +14,12 @@
 
         let scene, camera, renderer, controls;
         let player, enemy;
-        let playerSpeed = 1.2; // Adjusted player speed
-        let enemySpeed = playerSpeed * 0.7;
+        let playerSpeed = 1.1; // Adjusted player speed
+        let enemySpeed = playerSpeed * 0.60;
         let redBallSpeed = playerSpeed * 1.25;
         let lastBirthTime = 0;
         let particles = [];
-        let cameraNeedsUpdate = true; // Flag to update camera position
+        let targetCameraPosition;
 
         function init() {
             scene = new THREE.Scene();
@@ -108,7 +108,8 @@
             window.addEventListener('resize', onWindowResize, false);
             document.addEventListener('keydown', onDocumentKeyDown, false);
 
-            updateCameraPosition(); // Initial camera position
+            targetCameraPosition = camera.position.clone(); // Initialize the target camera position
+
             animate();
         }
 
@@ -135,7 +136,7 @@
             } else if (keyCode === 70) { // F
                 shootParticle();
             }
-            cameraNeedsUpdate = true; // Indicate that the camera needs updating
+            updateCameraPosition(); // Update the target camera position
         }
 
         function shootParticle() {
@@ -150,9 +151,7 @@
 
         function updateCameraPosition() {
             const cameraOffset = new THREE.Vector3(0, 50, 200);
-            const desiredPosition = player.position.clone().add(cameraOffset);
-            camera.position.copy(desiredPosition);
-            camera.lookAt(player.position);
+            targetCameraPosition.copy(player.position).add(cameraOffset);
         }
 
         function animate() {
@@ -175,11 +174,9 @@
             direction.subVectors(player.position, enemy.position).normalize();
             enemy.position.addScaledVector(direction, enemySpeed);
 
-            // Update camera only if needed
-            if (cameraNeedsUpdate) {
-                updateCameraPosition();
-                cameraNeedsUpdate = false; // Reset flag
-            }
+            // Smoothly update camera position to follow player
+            camera.position.lerp(targetCameraPosition, 0.05);
+            camera.lookAt(player.position);
 
             controls.update();
             renderer.render(scene, camera);
