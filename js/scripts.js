@@ -3,12 +3,11 @@ import { OrbitControls } from './libs/OrbitControls.js';
 import { CSG } from './libs/CSG.js';
 
 let scene, camera, renderer, controls;
-let player, enemy, redBalls = [];
+let player, enemy, magentaPlayer, isGameOver = false;
+let redBalls = [];
 let playerSpeed = 0.6;
 let enemySpeed = 0.34 * playerSpeed;
 let redBallSpeed = 1.25 * playerSpeed;
-let maxRedBallSize = 50; // Maximum size limit for red balls
-let minPlayerSize = 5; // Minimum size limit for player ball
 let collisionTimeout = false;
 
 function init() {
@@ -142,7 +141,34 @@ function checkCollision(object1, object2) {
     return distance < (object1.geometry.parameters.radius * object1.scale.x + object2.geometry.parameters.radius * object2.scale.x);
 }
 
+function handleGameOver() {
+    isGameOver = true;
+    const magentaPlayerGeometry = new THREE.SphereGeometry(10, 32, 32);
+    const magentaPlayerMaterial = new THREE.MeshPhongMaterial({ color: 0xff00ff, emissive: 0x111111, shininess: 100 });
+    magentaPlayer = new THREE.Mesh(magentaPlayerGeometry, magentaPlayerMaterial);
+    magentaPlayer.position.copy(player.position);
+    scene.add(magentaPlayer);
+
+    enemy.scale.setScalar(enemy.scale.x * 2);
+
+    scene.remove(player);
+
+    // Reset player state
+    player = magentaPlayer;
+    playerSpeed = 0.6;
+
+    // Reset enemy state
+    enemy.userData.collided = false;
+
+    // Chase the magenta player
+    animate();
+}
+
 function animate() {
+    if (isGameOver) {
+        return;
+    }
+
     requestAnimationFrame(animate);
 
     // Enemy chases player
@@ -159,11 +185,10 @@ function animate() {
 
         // Check collision with player
         if (checkCollision(redBall, player)) {
-            if (redBall.geometry.parameters.radius < maxRedBallSize) {
-                redBall.scale.setScalar(redBall.scale.x + 0.01); // Grow red ball
-            }
-            if (player.geometry.parameters.radius > minPlayerSize) {
-                player.scale.setScalar(player.scale.x - 0.01); // Shrink player ball
+            redBall.position.addScaledVector(direction.negate(), 10); // Pull away
+
+            if (player.scale.x <= 0.1) { // If player size is below threshold
+                handleGameOver();
             }
         }
     });
