@@ -14,11 +14,12 @@
 
         let scene, camera, renderer, controls;
         let player, enemy;
-        let playerSpeed = 1.25; // Adjusted player speed
-        let enemySpeed = playerSpeed * 0.4;
+        let playerSpeed = 0.5; // Adjusted player speed
+        let enemySpeed = playerSpeed * 0.95;
         let redBallSpeed = playerSpeed * 1.25;
         let lastBirthTime = 0;
         let particles = [];
+        let dummy;
 
         function init() {
             scene = new THREE.Scene();
@@ -38,6 +39,10 @@
             controls.maxPolarAngle = Math.PI / 2;
             controls.update();
 
+            // Dummy object to follow the player
+            dummy = new THREE.Object3D();
+            scene.add(dummy);
+
             // Floor
             const floorTexture = new THREE.TextureLoader().load('grunge-texture.jpg');
             floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
@@ -50,7 +55,7 @@
             scene.add(floor);
 
             // Walls
-            const wallTexture = new THREE.TextureLoader().load('darkgreentiled-wall.jpg');
+            const wallTexture = new THREE.TextureLoader().load('dark-concrete-wall.jpg');
             wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
             wallTexture.repeat.set(50, 10);
 
@@ -166,8 +171,11 @@
             direction.subVectors(player.position, enemy.position).normalize();
             enemy.position.addScaledVector(direction, enemySpeed);
 
-            // Ensure the camera is always following the player, but doesn't override the controls
-            controls.target.copy(player.position);
+            // Update dummy position to follow the player
+            dummy.position.copy(player.position);
+
+            // Ensure the camera is always following the dummy object, but doesn't override the controls
+            controls.target.copy(dummy.position);
             controls.update();
 
             renderer.render(scene, camera);
