@@ -14,8 +14,8 @@
 
         let scene, camera, renderer, controls;
         let player, enemy, particles = [];
-        const playerSpeed = 0.9;
-        const enemySpeed = playerSpeed * 0.95;
+        const enemySpeed = 0.9;
+        const playerSpeed = enemySpeed * 1.1;
         const redBallSpeed = playerSpeed * 1.25;
         const ballRadius = { player: 10, enemy: 25, red: 15 };
         const walls = [];
