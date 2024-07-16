@@ -14,7 +14,7 @@
 
         let scene, camera, renderer, controls;
         let player, enemy;
-        let playerSpeed = 0.9;
+        let playerSpeed = 1.1;
         let enemySpeed = playerSpeed * 0.95;
         let redBalls = [];
         let lastCollisionTime = 0;
@@ -231,7 +231,7 @@
                     }
                 });
 
-                // Update particles
+                // Move particles
                 particles.forEach((particle, index) => {
                     particle.position.add(particle.velocity);
                     if (particle.position.length() > 100) {
