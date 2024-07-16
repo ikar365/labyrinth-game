@@ -6,7 +6,7 @@ import { CSG } from '../libs/CSG.js';
 let scene, camera, renderer, controls;
 let player, enemy, redBalls = [];
 let playerSpeed = 0.9;
-let enemySpeed = playerSpeed * 0.95;
+let enemySpeed = playerSpeed * 0.66; // Slowed down by 34 percent
 let redBallSpeed = playerSpeed * 1.25;
 let redBallSpawnTime = 15000; // 15 seconds
 let lastRedBallSpawnTime = 0;
