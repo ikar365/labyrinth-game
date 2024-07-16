@@ -44,13 +44,13 @@
 
             // Floor
             const floorGeometry = new THREE.PlaneGeometry(1920, 1080);
-            const floorMaterial = new THREE.MeshPhongMaterial({ color: 0x808080 });
+            const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
             const floor = new THREE.Mesh(floorGeometry, floorMaterial);
             floor.rotation.x = - Math.PI / 2;
             scene.add(floor);
 
             // Walls
-            const wallMaterial = new THREE.MeshPhongMaterial({ color: 0x808080 });
+            const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
             const wallHeight = 50;
             const wallGeometry = new THREE.PlaneGeometry(1920, wallHeight);
             const wall1 = new THREE.Mesh(wallGeometry, wallMaterial);
@@ -74,7 +74,7 @@
 
             // Roof
             const roofGeometry = new THREE.PlaneGeometry(1920, 1080);
-            const roofMaterial = new THREE.MeshPhongMaterial({ color: 0x808080 });
+            const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
             const roof = new THREE.Mesh(roofGeometry, roofMaterial);
             roof.rotation.x = Math.PI / 2;
             roof.position.y = wallHeight;
@@ -114,34 +114,4 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function onDocumentKeyDown(event) {
-            const keyCode = event.which;
-            if (keyCode === 87) { // W
-                player.position.z -= playerSpeed;
-            } else if (keyCode === 83) { // S
-                player.position.z += playerSpeed;
-            } else if (keyCode === 65) { // A
-                player.position.x -= playerSpeed;
-            } else if (keyCode === 68) { // D
-                player.position.x += playerSpeed;
-            }
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Enemy chases player
-            const direction = new THREE.Vector3();
-            direction.subVectors(player.position, enemy.position).normalize();
-            enemy.position.addScaledVector(direction, playerSpeed * 0.3); // Increase enemy speed by 6 times
-
-            controls.update();
-            renderer.render(scene, camera);
-        }
-
-        init();
-    </script>
-</body>
-</html>
+        
