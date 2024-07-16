@@ -13,19 +13,18 @@
         import { CSG } from './libs/CSG.js';
 
         let scene, camera, renderer, controls;
-        let player, enemy, particles = [];
-        const enemySpeed = 0.9;
-        const playerSpeed = enemySpeed * 1.2;
-        const redBallSpeed = playerSpeed * 1.25;
-        const ballRadius = { player: 10, enemy: 25, red: 15 };
-        const walls = [];
+        let player, enemy;
+        let playerSpeed = 0.5; // Adjusted player speed
+        let enemySpeed = playerSpeed * 0.95;
+        let redBallSpeed = playerSpeed * 1.25;
+        let lastBirthTime = 0;
+        let particles = [];
 
         function init() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x333444);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-            camera.position.set(0, 100, 200);
 
             renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -61,44 +60,40 @@
             const wall1 = new THREE.Mesh(wallGeometry, wallMaterial);
             wall1.position.set(0, wallHeight / 2, -2500);
             scene.add(wall1);
-            walls.push(wall1);
 
             const wall2 = wall1.clone();
             wall2.position.set(0, wallHeight / 2, 2500);
             wall2.rotation.y = Math.PI;
             scene.add(wall2);
-            walls.push(wall2);
 
             const wall3 = new THREE.Mesh(new THREE.PlaneGeometry(5000, wallHeight), wallMaterial);
             wall3.position.set(-2500, wallHeight / 2, 0);
             wall3.rotation.y = Math.PI / 2;
             scene.add(wall3);
-            walls.push(wall3);
 
             const wall4 = wall3.clone();
             wall4.position.set(2500, wallHeight / 2, 0);
             wall4.rotation.y = -Math.PI / 2;
             scene.add(wall4);
-            walls.push(wall4);
 
             // Player
-            const playerGeometry = new THREE.SphereGeometry(ballRadius.player, 32, 32);
+            const playerGeometry = new THREE.SphereGeometry(10, 32, 32);
             const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff, emissive: 0x111111, shininess: 100 });
             player = new THREE.Mesh(playerGeometry, playerMaterial);
-            player.position.set(0, ballRadius.player, 0);
+            player.position.set(0, 10, 0);
             scene.add(player);
 
             // Enemy
-            const enemyGeometry = new THREE.SphereGeometry(ballRadius.enemy, 32, 32);
+            const enemyGeometry = new THREE.SphereGeometry(25, 32, 32);
             const enemyMaterial = new THREE.MeshPhysicalMaterial({
-                color: 0xffa500,  // Set the color to orange
-                metalness: 0.5,
+                color: 0xffa500,
+                emissive: 0x111111,
                 roughness: 0.1,
-                clearcoat: 1.0,
-                clearcoatRoughness: 0.1,
+                metalness: 0.5,
+                reflectivity: 1
             });
             enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
-            enemy.position.set(100, ballRadius.enemy, 100);
+            enemy.position.set(100, 25, 100);
             scene.add(enemy);
 
             // Add lighting
@@ -141,26 +136,29 @@
         }
 
         function shootParticle() {
-            const particleGeometry = new THREE.SphereGeometry(3, 8, 8);
-            const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const particleGeometry = new THREE.SphereGeometry(3, 16, 16);
+            const particleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
             const particle = new THREE.Mesh(particleGeometry, particleMaterial);
             particle.position.copy(player.position);
-            particle.velocity = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion).normalize();
-            particles.push(particle);
+            particle.velocity = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion).normalize().multiplyScalar(2);
             scene.add(particle);
+            particles.push(particle);
         }
 
         function animate() {
             requestAnimationFrame(animate);
 
-            // Move particles
-            particles.forEach((particle, index) => {
-                particle.position.add(particle.velocity.clone().multiplyScalar(2));
-                if (particle.position.length() > 5000) {
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const particle = particles[i];
+                particle.position.add(particle.velocity);
+
+                // Remove particle if it goes too far
+                if (particle.position.distanceTo(player.position) > 200) {
                     scene.remove(particle);
-                    particles.splice(index, 1);
+                    particles.splice(i, 1);
                 }
-            });
+            }
 
             // Enemy chases player
             const direction = new THREE.Vector3();
@@ -169,11 +167,11 @@
 
             // Update camera to follow player without changing the angle
             const cameraOffset = new THREE.Vector3(0, 50, 200);
-            const newCameraPosition = player.position.clone().add(cameraOffset);
-            camera.position.lerp(newCameraPosition, 0.05);
-            controls.target.copy(player.position);
-            controls.update();
+            const desiredPosition = player.position.clone().add(cameraOffset);
+            camera.position.lerp(desiredPosition, 0.05);
+            camera.lookAt(player.position);
 
+            controls.update();
             renderer.render(scene, camera);
         }
 
