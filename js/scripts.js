@@ -3,12 +3,12 @@ import { OrbitControls } from './libs/OrbitControls.js';
 import { CSG } from './libs/CSG.js';
 
 let scene, camera, renderer, controls;
-let player, enemy;
-let playerSpeed = 0.9;
-let enemySpeed = playerSpeed * 0.34;
-let redBallSpeed = playerSpeed * 1.25;
-let redBalls = [];
-let canSpawnRedBall = true;
+let player, enemy, redBalls = [];
+let playerSpeed = 0.6;
+let enemySpeed = 0.34 * playerSpeed;
+let redBallSpeed = 1.25 * playerSpeed;
+let maxRedBallSize = 50; // Maximum size limit for red balls
+let minPlayerSize = 5; // Minimum size limit for player ball
 
 function init() {
     scene = new THREE.Scene();
@@ -79,6 +79,7 @@ function init() {
         color: 0xffa500,
         emissive: 0x111111,
         shininess: 100,
+        opacity: 0.95,
         refractionRatio: 0.98
     });
     enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
@@ -95,6 +96,8 @@ function init() {
 
     window.addEventListener('resize', onWindowResize, false);
     document.addEventListener('keydown', onDocumentKeyDown, false);
+
+    setInterval(spawnRedBall, 15000); // Spawn a red ball every 15 seconds
 
     animate();
 }
@@ -122,63 +125,51 @@ function onDocumentKeyDown(event) {
     }
 }
 
+function spawnRedBall() {
+    if (enemy.userData.collided) {
+        const redBallGeometry = new THREE.SphereGeometry(15, 32, 32);
+        const redBallMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+        const redBall = new THREE.Mesh(redBallGeometry, redBallMaterial);
+        redBall.position.copy(enemy.position);
+        scene.add(redBall);
+        redBalls.push(redBall);
+    }
+}
+
 function animate() {
     requestAnimationFrame(animate);
 
     // Enemy chases player
-    if (!enemy.userData.stopMovement) {
+    if (!enemy.userData.collided) {
         const direction = new THREE.Vector3();
         direction.subVectors(player.position, enemy.position).normalize();
         enemy.position.addScaledVector(direction, enemySpeed);
     }
 
-    // Red balls chase player
-    redBalls.forEach((redBall) => {
+    redBalls.forEach(redBall => {
         const direction = new THREE.Vector3();
         direction.subVectors(player.position, redBall.position).normalize();
         redBall.position.addScaledVector(direction, redBallSpeed);
-    });
 
-    // Check for collision between player and enemy
-    if (player.position.distanceTo(enemy.position) < (10 + 25)) {
-        enemy.userData.stopMovement = true;
-        if (canSpawnRedBall) {
-            canSpawnRedBall = false;
-            setTimeout(() => {
-                spawnRedBall();
-                canSpawnRedBall = true;
-            }, 15000);
-        }
-    } else {
-        enemy.userData.stopMovement = false;
-    }
-
-    // Check for collisions between player and red balls
-    redBalls.forEach((redBall) => {
-        if (player.position.distanceTo(redBall.position) < (10 + redBall.geometry.parameters.radius)) {
-            redBall.geometry = new THREE.SphereGeometry(redBall.geometry.parameters.radius + 1, 32, 32);
-            player.geometry = new THREE.SphereGeometry(player.geometry.parameters.radius - 1, 32, 32);
+        // Check collision with player
+        if (redBall.position.distanceTo(player.position) < (redBall.geometry.parameters.radius + player.geometry.parameters.radius)) {
+            if (redBall.geometry.parameters.radius < maxRedBallSize) {
+                redBall.scale.setScalar(redBall.scale.x + 0.1); // Grow red ball
+            }
+            if (player.geometry.parameters.radius > minPlayerSize) {
+                player.scale.setScalar(player.scale.x - 0.1); // Shrink player ball
+            }
         }
     });
 
-    // Update controls to follow player without changing the camera angle
-    controls.target.copy(player.position);
+    // Update camera to follow player without changing the angle
+    const cameraOffset = new THREE.Vector3(0, 50, 200);
+    const newCameraPosition = player.position.clone().add(cameraOffset);
+    camera.position.lerp(newCameraPosition, 0.05);
+    camera.lookAt(player.position);
+
     controls.update();
-
     renderer.render(scene, camera);
-}
-
-function spawnRedBall() {
-    const redBallGeometry = new THREE.SphereGeometry(15, 32, 32);
-    const redBallMaterial = new THREE.MeshPhongMaterial({
-        color: 0xff0000,
-        emissive: 0x111111,
-        shininess: 100
-    });
-    const redBall = new THREE.Mesh(redBallGeometry, redBallMaterial);
-    redBall.position.copy(enemy.position);
-    scene.add(redBall);
-    redBalls.push(redBall);
 }
 
 init();
