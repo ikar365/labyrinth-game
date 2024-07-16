@@ -173,7 +173,7 @@
 
                     if (player.scale.x * blueBallOriginalSize <= 10) {
                         gameOver = true;
-                        player.material.color.set(0x000000);
+                        player.material.color.set(0x0000ff); // Ensure the blue ball remains blue
                         redBalls.forEach(rb => {
                             rb.material.color.set(0xff0000);
                         });
@@ -248,7 +248,13 @@
                 });
             }
 
+            // Update camera to follow player without changing the angle
+            const cameraOffset = new THREE.Vector3(0, 50, 200);
+            const newCameraPosition = player.position.clone().add(cameraOffset);
+            camera.position.lerp(newCameraPosition, 0.05);
+            controls.target.copy(player.position);
             controls.update();
+
             renderer.render(scene, camera);
         }
 
