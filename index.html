@@ -14,7 +14,7 @@
 
         let scene, camera, renderer, controls;
         let player, enemy;
-        let playerSpeed = 2;
+        let playerSpeed = 0.6; // Increase player speed by 6 times
 
         function init() {
             scene = new THREE.Scene();
@@ -80,16 +80,26 @@
             roof.position.y = wallHeight;
             scene.add(roof);
 
-            // Player
+            // Player (Butter-like material)
             const playerGeometry = new THREE.SphereGeometry(10, 32, 32);
-            const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+            const playerMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffd700,
+                roughness: 0.8,
+                metalness: 0.2
+            });
             player = new THREE.Mesh(playerGeometry, playerMaterial);
             player.position.set(0, 10, 0);
             scene.add(player);
 
-            // Enemy
+            // Enemy (Glass-like material)
             const enemyGeometry = new THREE.SphereGeometry(25, 32, 32);
-            const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0xffa500 });
+            const enemyMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xffa500,
+                metalness: 0.5,
+                roughness: 0.1,
+                transmission: 0.9,
+                thickness: 2
+            });
             enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
             enemy.position.set(100, 25, 100);
             scene.add(enemy);
@@ -125,7 +135,7 @@
             // Enemy chases player
             const direction = new THREE.Vector3();
             direction.subVectors(player.position, enemy.position).normalize();
-            enemy.position.addScaledVector(direction, playerSpeed / 2);
+            enemy.position.addScaledVector(direction, playerSpeed * 0.3); // Increase enemy speed by 6 times
 
             controls.update();
             renderer.render(scene, camera);
