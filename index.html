@@ -14,8 +14,8 @@
 
         let scene, camera, renderer, controls;
         let player, enemy;
-        let playerSpeed = 1.1; // Adjusted player speed
-        let enemySpeed = playerSpeed * 0.60;
+        let playerSpeed = 0.9; // Adjusted player speed
+        let enemySpeed = playerSpeed * 0.9;
         let redBallSpeed = playerSpeed * 1.25;
         let lastBirthTime = 0;
         let particles = [];
@@ -175,6 +175,9 @@
             enemy.position.addScaledVector(direction, enemySpeed);
 
             // Smoothly update camera position to follow player
+            const cameraOffset = new THREE.Vector3(0, 50, 200);
+            const newCameraPosition = player.position.clone().add(cameraOffset);
+            targetCameraPosition.lerp(newCameraPosition, 0.1);
             camera.position.lerp(targetCameraPosition, 0.05);
             camera.lookAt(player.position);
 
