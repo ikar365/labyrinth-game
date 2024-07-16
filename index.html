@@ -20,6 +20,8 @@
         let redBalls = [];
         let particles = [];
         let clock = new THREE.Clock();
+        const walls = [];
+        const ballRadius = { player: 10, enemy: 25, red: 15 };
 
         function init() {
             scene = new THREE.Scene();
@@ -49,6 +51,7 @@
             const floor = new THREE.Mesh(floorGeometry, floorMaterial);
             floor.rotation.x = - Math.PI / 2;
             scene.add(floor);
+            walls.push(floor);
 
             // Walls
             const wallTexture = new THREE.TextureLoader().load('dark-concrete-wall.jpg');
@@ -62,31 +65,35 @@
             const wall1 = new THREE.Mesh(wallGeometry, wallMaterial);
             wall1.position.set(0, wallHeight / 2, -2500);
             scene.add(wall1);
+            walls.push(wall1);
 
             const wall2 = wall1.clone();
             wall2.position.set(0, wallHeight / 2, 2500);
             wall2.rotation.y = Math.PI;
             scene.add(wall2);
+            walls.push(wall2);
 
             const wall3 = new THREE.Mesh(new THREE.PlaneGeometry(5000, wallHeight), wallMaterial);
             wall3.position.set(-2500, wallHeight / 2, 0);
             wall3.rotation.y = Math.PI / 2;
             scene.add(wall3);
+            walls.push(wall3);
 
             const wall4 = wall3.clone();
             wall4.position.set(2500, wallHeight / 2, 0);
             wall4.rotation.y = -Math.PI / 2;
             scene.add(wall4);
+            walls.push(wall4);
 
             // Player
-            const playerGeometry = new THREE.SphereGeometry(10, 32, 32);
+            const playerGeometry = new THREE.SphereGeometry(ballRadius.player, 32, 32);
             const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff, emissive: 0x111111, shininess: 100 });
             player = new THREE.Mesh(playerGeometry, playerMaterial);
-            player.position.set(0, 10, 0);
+            player.position.set(0, ballRadius.player, 0);
             scene.add(player);
 
             // Enemy
-            const enemyGeometry = new THREE.SphereGeometry(25, 32, 32);
+            const enemyGeometry = new THREE.SphereGeometry(ballRadius.enemy, 32, 32);
             const enemyMaterial = new THREE.MeshPhysicalMaterial({
                 color: 0xffa500,
                 metalness: 0.5,
@@ -95,7 +102,7 @@
                 clearcoatRoughness: 0.1,
             });
             enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
-            enemy.position.set(100, 25, 100);
+            enemy.position.set(100, ballRadius.enemy, 100);
             scene.add(enemy);
 
             // Add lighting
@@ -120,21 +127,41 @@
 
         function onDocumentKeyDown(event) {
             const keyCode = event.which;
+            let moveDistance = playerSpeed;
             if (keyCode === 87) { // W
-                player.position.z -= playerSpeed;
+                movePlayer(0, 0, -moveDistance);
             } else if (keyCode === 83) { // S
-                player.position.z += playerSpeed;
+                movePlayer(0, 0, moveDistance);
             } else if (keyCode === 65) { // A
-                player.position.x -= playerSpeed;
+                movePlayer(-moveDistance, 0, 0);
             } else if (keyCode === 68) { // D
-                player.position.x += playerSpeed;
+                movePlayer(moveDistance, 0, 0);
             } else if (keyCode === 32) { // Space
-                player.position.y += playerSpeed;
+                movePlayer(0, moveDistance, 0);
             } else if (keyCode === 88) { // X
-                player.position.y -= playerSpeed;
+                movePlayer(0, -moveDistance, 0);
             } else if (keyCode === 70) { // F (shoot)
                 shootParticle();
             }
+        }
+
+        function movePlayer(dx, dy, dz) {
+            player.position.x += dx;
+            player.position.y += dy;
+            player.position.z += dz;
+            preventPenetration(player);
+        }
+
+        function preventPenetration(object) {
+            walls.forEach(wall => {
+                const box1 = new THREE.Box3().setFromObject(object);
+                const box2 = new THREE.Box3().setFromObject(wall);
+                if (box1.intersectsBox(box2)) {
+                    object.position.x -= dx;
+                    object.position.y -= dy;
+                    object.position.z -= dz;
+                }
+            });
         }
 
         function shootParticle() {
@@ -156,9 +183,10 @@
             const direction = new THREE.Vector3();
             direction.subVectors(player.position, enemy.position).normalize();
             enemy.position.addScaledVector(direction, enemySpeed * delta);
+            preventPenetration(enemy);
 
             // Check for enemy touching player
-            if (enemy.position.distanceTo(player.position) < 35) {
+            if (enemy.position.distanceTo(player.position) < ballRadius.enemy + ballRadius.player) {
                 const currentTime = clock.getElapsedTime();
                 if (currentTime - lastBirthTime > 30) {
                     lastBirthTime = currentTime;
@@ -171,6 +199,7 @@
                 const redDirection = new THREE.Vector3();
                 redDirection.subVectors(player.position, redBall.position).normalize();
                 redBall.position.addScaledVector(redDirection, playerSpeed * 1.1 * delta);
+                preventPenetration(redBall);
 
                 // Check for red ball touching player
                 if (redBall.position.distanceTo(player.position) < redBall.geometry.parameters.radius + player.geometry.parameters.radius) {
@@ -191,7 +220,7 @@
                     if (particle.position.distanceTo(redBall.position) < redBall.geometry.parameters.radius + 1.5) {
                         redBall.geometry.parameters.radius -= 1;
                         redBall.scale.setScalar(redBall.geometry.parameters.radius / 15);
-                        if (redBall.geometry.parameters.radius < 1) {
+                        if (redBall.geometry.parameters.radius <= 0) {
                             scene.remove(redBall);
                             redBalls.splice(redBallIndex, 1);
                         }
@@ -201,7 +230,11 @@
                 });
             });
 
-            // Update camera to follow player
+            // Update camera to follow player without changing the angle
+            const cameraOffset = new THREE.Vector3(0, 100, 300);
+            const newCameraPosition = player.position.clone().add(cameraOffset);
+            camera.position.lerp(newCameraPosition, 0.05);
+
             controls.target.copy(player.position);
             controls.update();
 
@@ -209,12 +242,12 @@
         }
 
         function giveBirthToRedBall() {
-            const redBallGeometry = new THREE.SphereGeometry(15, 32, 32);
-            const redBallMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0x111111, shininess: 100 });
+            const redBallGeometry = new THREE.SphereGeometry(ballRadius.red, 32, 32);
+            const redBallMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0x330000, shininess: 100 });
             const redBall = new THREE.Mesh(redBallGeometry, redBallMaterial);
             redBall.position.copy(enemy.position);
-            redBalls.push(redBall);
             scene.add(redBall);
+            redBalls.push(redBall);
         }
 
         init();
