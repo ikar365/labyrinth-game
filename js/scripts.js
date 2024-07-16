@@ -163,10 +163,8 @@ function animate() {
     });
 
     // Update camera to follow player without changing the angle
-    const cameraOffset = new THREE.Vector3(0, 50, 200);
-    const newCameraPosition = player.position.clone().add(cameraOffset);
-    camera.position.lerp(newCameraPosition, 0.05);
-    camera.lookAt(player.position);
+    const playerPosition = new THREE.Vector3(player.position.x, player.position.y, player.position.z);
+    controls.target.copy(playerPosition);
 
     controls.update();
     renderer.render(scene, camera);
