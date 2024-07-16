@@ -14,12 +14,12 @@
 
         let scene, camera, renderer, controls;
         let player, enemy;
-        let playerSpeed = 0.9; // Adjusted player speed
-        let enemySpeed = playerSpeed * 0.5;
+        let playerSpeed = 0.5; // Adjusted player speed
+        let enemySpeed = playerSpeed * 0.95;
         let redBallSpeed = playerSpeed * 1.25;
         let lastBirthTime = 0;
         let particles = [];
-        let targetCameraPosition;
+        let cameraOffset = new THREE.Vector3(0, 50, 200);
 
         function init() {
             scene = new THREE.Scene();
@@ -108,8 +108,6 @@
             window.addEventListener('resize', onWindowResize, false);
             document.addEventListener('keydown', onDocumentKeyDown, false);
 
-            targetCameraPosition = camera.position.clone(); // Initialize the target camera position
-
             animate();
         }
 
@@ -150,8 +148,8 @@
         }
 
         function updateCameraPosition() {
-            const cameraOffset = new THREE.Vector3(0, 50, 200);
-            targetCameraPosition.copy(player.position).add(cameraOffset);
+            const newCameraPosition = player.position.clone().add(cameraOffset);
+            camera.position.lerp(newCameraPosition, 0.1);
         }
 
         function animate() {
@@ -174,11 +172,8 @@
             direction.subVectors(player.position, enemy.position).normalize();
             enemy.position.addScaledVector(direction, enemySpeed);
 
-            // Smoothly update camera position to follow player
-            const cameraOffset = new THREE.Vector3(0, 50, 200);
-            const newCameraPosition = player.position.clone().add(cameraOffset);
-            targetCameraPosition.lerp(newCameraPosition, 0.1);
-            camera.position.lerp(targetCameraPosition, 0.05);
+            // Update camera to follow player without changing the angle
+            updateCameraPosition();
             camera.lookAt(player.position);
 
             controls.update();
