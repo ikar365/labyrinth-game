@@ -53,7 +53,7 @@
             scene.add(floor);
 
             // Walls
-            const wallTexture = new THREE.TextureLoader().load('darkgreentiled-wall.jpg');
+            const wallTexture = new THREE.TextureLoader().load('dark-concrete-wall.jpg');
             wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
             wallTexture.repeat.set(50, 10);
 
@@ -205,7 +205,6 @@
             const redBallMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0x111111, shininess: 100 });
             const redBall = new THREE.Mesh(redBallGeometry, redBallMaterial);
             redBall.position.copy(enemy.position);
-            redBall.chasePlayer = true; // Add chasePlayer property
             redBalls.push(redBall);
             scene.add(redBall);
         }
@@ -225,7 +224,7 @@
 
                 // Red balls chase player
                 redBalls.forEach(redBall => {
-                    if (redBall.chasePlayer) {
+                    if (redBall) {
                         const direction = new THREE.Vector3();
                         direction.subVectors(player.position, redBall.position).normalize();
                         redBall.position.addScaledVector(direction, playerSpeed * 1.25);
