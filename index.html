@@ -14,8 +14,9 @@
 
         let scene, camera, renderer, controls;
         let player, enemy, redBalls = [];
-        let playerSpeed = 1.3;
-        let redBallSpeed = 1.125 * playerSpeed;
+        let playerSpeed = 0.9;
+        let enemySpeed = playerSpeed * 0.9;
+        let redBallSpeed = playerSpeed * 1.25;
         let redBallSpawnTime = 15000; // 15 seconds
         let lastRedBallSpawnTime = 0;
 
@@ -159,7 +160,7 @@
             if (enemy.position.distanceTo(player.position) > 30) {
                 const direction = new THREE.Vector3();
                 direction.subVectors(player.position, enemy.position).normalize();
-                enemy.position.addScaledVector(direction, playerSpeed * 0.95);
+                enemy.position.addScaledVector(direction, enemySpeed);
             }
 
             // Red balls chase player
