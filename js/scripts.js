@@ -1,153 +1,179 @@
-import * as THREE from './libs/three.module.js';
-import { OrbitControls } from './libs/OrbitControls.js';
-import { CSG } from './libs/CSG.js';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labyrinth Game</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <script type="module">
+        import * as THREE from './libs/three.module.js';
+        import { OrbitControls } from './libs/OrbitControls.js';
+        import { CSG } from './libs/CSG.js';
 
-// Create the scene, camera, and renderer
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x333444);
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+        let scene, camera, renderer, controls;
+        let player, enemy;
+        let playerSpeed = 0.5; // Adjusted player speed
+        let enemySpeed = playerSpeed * 0.95;
+        let redBallSpeed = playerSpeed * 1.25;
+        let lastBirthTime = 0;
+        let particles = [];
 
-// Add orbit controls
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.25;
-controls.screenSpacePanning = false;
-controls.minDistance = 50;
-controls.maxDistance = 500;
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x333444);
 
-// Add lighting
-const ambientLight = new THREE.AmbientLight(0x404040, 2); // Adjust intensity as needed
-scene.add(ambientLight);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+            camera.position.set(0, 50, 200); // Initial position of the camera
 
-const pointLight = new THREE.PointLight(0xffffff, 1, 1000);
-pointLight.position.set(50, 50, 50);
-scene.add(pointLight);
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-// Add shader material for the floor
-const vertexShader = `
-    varying vec3 vNormal;
-    void main() {
-        vNormal = normalize(normalMatrix * normal);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-`;
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.25;
+            controls.screenSpacePanning = false;
+            controls.maxPolarAngle = Math.PI / 2;
+            controls.update();
 
-const fragmentShader = `
-    varying vec3 vNormal;
-    void main() {
-        float intensity = pow(0.9 - dot(vNormal, vec3(0, 0, 1.0)), 2.0);
-        gl_FragColor = vec4(0.1, 0.1, 0.1, 1.0) * intensity + vec4(0.5, 0.5, 0.5, 1.0) * (1.0 - intensity);
-    }
-`;
+            // Floor
+            const floorTexture = new THREE.TextureLoader().load('grunge-texture.jpg');
+            floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+            floorTexture.repeat.set(50, 50);
 
-const shaderMaterial = new THREE.ShaderMaterial({
-    vertexShader,
-    fragmentShader,
-    lights: true
-});
+            const floorGeometry = new THREE.PlaneGeometry(5000, 5000);
+            const floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = - Math.PI / 2;
+            scene.add(floor);
 
-// Create the floor, walls, and roof
-const geometry = new THREE.BoxGeometry(1920, 10, 1080);
-const material = shaderMaterial;
-const floor = new THREE.Mesh(geometry, material);
-floor.position.set(0, -5, 0);
-scene.add(floor);
+            // Walls
+            const wallTexture = new THREE.TextureLoader().load('dark-concrete-wall.jpg');
+            wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
+            wallTexture.repeat.set(50, 10);
 
-const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x606060 });
-const walls = [
-    new THREE.Mesh(new THREE.BoxGeometry(1920, 100, 10), wallMaterial),
-    new THREE.Mesh(new THREE.BoxGeometry(1920, 100, 10), wallMaterial),
-    new THREE.Mesh(new THREE.BoxGeometry(10, 100, 1080), wallMaterial),
-    new THREE.Mesh(new THREE.BoxGeometry(10, 100, 1080), wallMaterial),
-];
-walls[0].position.set(0, 45, -535);
-walls[1].position.set(0, 45, 535);
-walls[2].position.set(-960, 45, 0);
-walls[3].position.set(960, 45, 0);
-walls.forEach(wall => scene.add(wall));
+            const wallMaterial = new THREE.MeshBasicMaterial({ map: wallTexture });
+            const wallHeight = 5000;
+            const wallGeometry = new THREE.PlaneGeometry(5000, wallHeight);
 
-const roof = new THREE.Mesh(geometry, material);
-roof.position.set(0, 95, 0);
-scene.add(roof);
+            const wall1 = new THREE.Mesh(wallGeometry, wallMaterial);
+            wall1.position.set(0, wallHeight / 2, -2500);
+            scene.add(wall1);
 
-// Create player ball (blue) and enemy ball (orange)
-const playerGeometry = new THREE.SphereGeometry(10, 32, 32);
-const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-const playerBall = new THREE.Mesh(playerGeometry, playerMaterial);
-playerBall.position.set(0, 0, 0);
-scene.add(playerBall);
+            const wall2 = wall1.clone();
+            wall2.position.set(0, wallHeight / 2, 2500);
+            wall2.rotation.y = Math.PI;
+            scene.add(wall2);
 
-const enemyGeometry = new THREE.SphereGeometry(25, 32, 32);
-const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0xffa500 });
-const enemyBall = new THREE.Mesh(enemyGeometry, enemyMaterial);
-enemyBall.position.set(100, 0, 100);
-scene.add(enemyBall);
+            const wall3 = new THREE.Mesh(new THREE.PlaneGeometry(5000, wallHeight), wallMaterial);
+            wall3.position.set(-2500, wallHeight / 2, 0);
+            wall3.rotation.y = Math.PI / 2;
+            scene.add(wall3);
 
-// Set initial camera position
-camera.position.set(0, 150, 400);
-controls.update();
+            const wall4 = wall3.clone();
+            wall4.position.set(2500, wallHeight / 2, 0);
+            wall4.rotation.y = -Math.PI / 2;
+            scene.add(wall4);
 
-// Handle keyboard input
-const keys = {};
-window.addEventListener('keydown', (e) => keys[e.key] = true);
-window.addEventListener('keyup', (e) => keys[e.key] = false);
+            // Player
+            const playerGeometry = new THREE.SphereGeometry(10, 32, 32);
+            const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff, emissive: 0x111111, shininess: 100 });
+            player = new THREE.Mesh(playerGeometry, playerMaterial);
+            player.position.set(0, 10, 0);
+            scene.add(player);
 
-// Update player position based on input
-const moveSpeed = 8;
-function updatePlayerPosition() {
-    if (keys['w']) playerBall.position.z -= moveSpeed;
-    if (keys['s']) playerBall.position.z += moveSpeed;
-    if (keys['a']) playerBall.position.x -= moveSpeed;
-    if (keys['d']) playerBall.position.x += moveSpeed;
-}
+            // Enemy
+            const enemyGeometry = new THREE.SphereGeometry(25, 32, 32);
+            const enemyMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xffa500,
+                emissive: 0x111111,
+                roughness: 0.1,
+                metalness: 0.5,
+                reflectivity: 1
+            });
+            enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
+            enemy.position.set(100, 25, 100);
+            scene.add(enemy);
 
-// Simple enemy AI to chase the player
-const enemySpeed = 4;
-function updateEnemyPosition() {
-    const direction = new THREE.Vector3(
-        playerBall.position.x - enemyBall.position.x,
-        0,
-        playerBall.position.z - enemyBall.position.z
-    ).normalize();
-    enemyBall.position.add(direction.multiplyScalar(enemySpeed));
-}
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
 
-// Detect collision and trigger swallowing effect
-function detectCollision() {
-    const distance = playerBall.position.distanceTo(enemyBall.position);
-    if (distance < (10 + 25)) {
-        // Swallowing effect: gradually scale down the player and up the enemy
-        const swallowSpeed = 0.05;
-        playerBall.scale.set(
-            Math.max(playerBall.scale.x - swallowSpeed, 0),
-            Math.max(playerBall.scale.y - swallowSpeed, 0),
-            Math.max(playerBall.scale.z - swallowSpeed, 0)
-        );
-        enemyBall.scale.set(
-            enemyBall.scale.x + swallowSpeed,
-            enemyBall.scale.y + swallowSpeed,
-            enemyBall.scale.z + swallowSpeed
-        );
-        if (playerBall.scale.x <= 0.1) {
-            alert('Game Over');
-            playerBall.scale.set(1, 1, 1);
-            enemyBall.scale.set(1, 1, 1);
-            playerBall.position.set(0, 0, 0);
-            enemyBall.position.set(100, 0, 100);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(1, 1, 1).normalize();
+            scene.add(directionalLight);
+
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('keydown', onDocumentKeyDown, false);
+
+            animate();
         }
-    }
-}
 
-// Animation loop
-function animate() {
-    requestAnimationFrame(animate);
-    updatePlayerPosition();
-    updateEnemyPosition();
-    detectCollision();
-    controls.update();
-    renderer.render(scene, camera);
-}
-animate();
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onDocumentKeyDown(event) {
+            const keyCode = event.which;
+            if (keyCode === 87) { // W
+                player.position.z -= playerSpeed;
+            } else if (keyCode === 83) { // S
+                player.position.z += playerSpeed;
+            } else if (keyCode === 65) { // A
+                player.position.x -= playerSpeed;
+            } else if (keyCode === 68) { // D
+                player.position.x += playerSpeed;
+            } else if (keyCode === 32) { // Space
+                player.position.y += playerSpeed;
+            } else if (keyCode === 88) { // X
+                player.position.y -= playerSpeed;
+            } else if (keyCode === 70) { // F
+                shootParticle();
+            }
+        }
+
+        function shootParticle() {
+            const particleGeometry = new THREE.SphereGeometry(3, 16, 16);
+            const particleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+            particle.position.copy(player.position);
+            particle.velocity = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion).normalize().multiplyScalar(2);
+            scene.add(particle);
+            particles.push(particle);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const particle = particles[i];
+                particle.position.add(particle.velocity);
+
+                // Remove particle if it goes too far
+                if (particle.position.distanceTo(player.position) > 200) {
+                    scene.remove(particle);
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Enemy chases player
+            const direction = new THREE.Vector3();
+            direction.subVectors(player.position, enemy.position).normalize();
+            enemy.position.addScaledVector(direction, enemySpeed);
+
+            // Ensure the camera is always following the player, but doesn't override the controls
+            controls.target.copy(player.position);
+            controls.update();
+
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
+</body>
+</html>
