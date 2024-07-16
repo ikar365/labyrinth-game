@@ -6,7 +6,7 @@ import { CSG } from './libs/CSG.js';
 let scene, camera, renderer, controls;
 let player, enemy, redBalls = [];
 let playerSpeed = 0.9;
-let enemySpeed = playerSpeed * 0.9;
+let enemySpeed = playerSpeed * 0.95;
 let redBallSpeed = playerSpeed * 1.25;
 let redBallSpawnTime = 15000; // 15 seconds
 let lastRedBallSpawnTime = 0;
@@ -42,7 +42,7 @@ function init() {
     scene.add(floor);
 
     // Walls
-    const wallTexture = new THREE.TextureLoader().load('dark-concrete-wall.jpg');
+    const wallTexture = new THREE.TextureLoader().load('darkgreentiled-wall.jpg');
     wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
     wallTexture.repeat.set(50, 10);
 
