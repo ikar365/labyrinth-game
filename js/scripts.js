@@ -9,6 +9,7 @@ let enemySpeed = 0.34 * playerSpeed;
 let redBallSpeed = 1.25 * playerSpeed;
 let maxRedBallSize = 50; // Maximum size limit for red balls
 let minPlayerSize = 5; // Minimum size limit for player ball
+let collisionTimeout = false;
 
 function init() {
     scene = new THREE.Scene();
@@ -136,6 +137,11 @@ function spawnRedBall() {
     }
 }
 
+function checkCollision(object1, object2) {
+    const distance = object1.position.distanceTo(object2.position);
+    return distance < (object1.geometry.parameters.radius * object1.scale.x + object2.geometry.parameters.radius * object2.scale.x);
+}
+
 function animate() {
     requestAnimationFrame(animate);
 
@@ -152,15 +158,23 @@ function animate() {
         redBall.position.addScaledVector(direction, redBallSpeed);
 
         // Check collision with player
-        if (redBall.position.distanceTo(player.position) < (redBall.geometry.parameters.radius + player.geometry.parameters.radius)) {
+        if (checkCollision(redBall, player)) {
             if (redBall.geometry.parameters.radius < maxRedBallSize) {
-                redBall.scale.setScalar(redBall.scale.x + 0.1); // Grow red ball
+                redBall.scale.setScalar(redBall.scale.x + 0.01); // Grow red ball
             }
             if (player.geometry.parameters.radius > minPlayerSize) {
-                player.scale.setScalar(player.scale.x - 0.1); // Shrink player ball
+                player.scale.setScalar(player.scale.x - 0.01); // Shrink player ball
             }
         }
     });
+
+    // Check collision between player and enemy
+    if (checkCollision(player, enemy) && !collisionTimeout) {
+        enemy.userData.collided = true;
+        setTimeout(() => {
+            enemy.userData.collided = false;
+        }, 30000); // Enemy resumes movement after 30 seconds
+    }
 
     // Update camera to follow player without changing the angle
     const playerPosition = new THREE.Vector3(player.position.x, player.position.y, player.position.z);
