@@ -4,8 +4,9 @@ import { CSG } from './libs/CSG.js';
 
 // Create the scene, camera, and renderer
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x333444);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -18,15 +19,39 @@ controls.minDistance = 50;
 controls.maxDistance = 500;
 
 // Add lighting
-const ambientLight = new THREE.AmbientLight(0x404040);
+const ambientLight = new THREE.AmbientLight(0x404040, 2); // Adjust intensity as needed
 scene.add(ambientLight);
-const pointLight = new THREE.PointLight(0xffffff);
+
+const pointLight = new THREE.PointLight(0xffffff, 1, 1000);
 pointLight.position.set(50, 50, 50);
 scene.add(pointLight);
 
+// Add shader material for the floor
+const vertexShader = `
+    varying vec3 vNormal;
+    void main() {
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+`;
+
+const fragmentShader = `
+    varying vec3 vNormal;
+    void main() {
+        float intensity = pow(0.9 - dot(vNormal, vec3(0, 0, 1.0)), 2.0);
+        gl_FragColor = vec4(0.1, 0.1, 0.1, 1.0) * intensity + vec4(0.5, 0.5, 0.5, 1.0) * (1.0 - intensity);
+    }
+`;
+
+const shaderMaterial = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    lights: true
+});
+
 // Create the floor, walls, and roof
 const geometry = new THREE.BoxGeometry(1920, 10, 1080);
-const material = new THREE.MeshStandardMaterial({ color: 0x808080 });
+const material = shaderMaterial;
 const floor = new THREE.Mesh(geometry, material);
 floor.position.set(0, -5, 0);
 scene.add(floor);
@@ -71,7 +96,7 @@ window.addEventListener('keydown', (e) => keys[e.key] = true);
 window.addEventListener('keyup', (e) => keys[e.key] = false);
 
 // Update player position based on input
-const moveSpeed = 4;
+const moveSpeed = 8;
 function updatePlayerPosition() {
     if (keys['w']) playerBall.position.z -= moveSpeed;
     if (keys['s']) playerBall.position.z += moveSpeed;
@@ -80,7 +105,7 @@ function updatePlayerPosition() {
 }
 
 // Simple enemy AI to chase the player
-const enemySpeed = 2;
+const enemySpeed = 4;
 function updateEnemyPosition() {
     const direction = new THREE.Vector3(
         playerBall.position.x - enemyBall.position.x,
