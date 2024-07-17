@@ -11,6 +11,7 @@ let redBallSpawnDelay = 15000; // 15 seconds
 let lastRedBallSpawnTime = 0;
 let isSwallowing = false;
 let shrinkInterval;
+const collisionTolerance = 0.1;
 
 function init() {
     scene = new THREE.Scene();
@@ -181,35 +182,65 @@ function handleCollisionWithRedBall(redBall) {
     }
 }
 
+function checkCollisionWithWalls(ball) {
+    const halfSize = 5000 / 2;
+    if (ball.position.x - ball.geometry.parameters.radius < -halfSize) {
+        ball.position.x = -halfSize + ball.geometry.parameters.radius;
+    } else if (ball.position.x + ball.geometry.parameters.radius > halfSize) {
+        ball.position.x = halfSize - ball.geometry.parameters.radius;
+    }
+
+    if (ball.position.z - ball.geometry.parameters.radius < -halfSize) {
+        ball.position.z = -halfSize + ball.geometry.parameters.radius;
+    } else if (ball.position.z + ball.geometry.parameters.radius > halfSize) {
+        ball.position.z = halfSize - ball.geometry.parameters.radius;
+    }
+}
+
+function checkCollisionBetweenBalls(ball1, ball2) {
+    const distance = ball1.position.distanceTo(ball2.position);
+    const minDistance = ball1.geometry.parameters.radius + ball2.geometry.parameters.radius;
+
+    if (distance < minDistance) {
+        const overlap = minDistance - distance + collisionTolerance;
+        const direction = new THREE.Vector3();
+        direction.subVectors(ball1.position, ball2.position).normalize();
+        ball1.position.addScaledVector(direction, overlap / 2);
+        ball2.position.addScaledVector(direction, -overlap / 2);
+    }
+}
+
 function animate() {
     requestAnimationFrame(animate);
 
-    // Update enemy sensor position
-    enemySensor.position.copy(enemy.position);
-
     // Enemy chases player
-    if (!isSwallowing && enemy.position.distanceTo(player.position) > 25) {
+    if (!isSwallowing) {
         const direction = new THREE.Vector3();
         direction.subVectors(player.position, enemy.position).normalize();
         enemy.position.addScaledVector(direction, enemySpeed);
-        enemySensor.position.addScaledVector(direction, enemySpeed);
-    }
+        enemySensor.position.copy(enemy.position);
 
-    // Check for collision between player and enemy sensor
-    if (enemySensor.position.distanceTo(player.position) < 25) {
-        if (Date.now() - lastRedBallSpawnTime > redBallSpawnDelay) {
-            spawnRedBall();
-            lastRedBallSpawnTime = Date.now();
+        if (enemySensor.position.distanceTo(player.position) < 26) {
+            if (Date.now() - lastRedBallSpawnTime > redBallSpawnDelay) {
+                spawnRedBall();
+                lastRedBallSpawnTime = Date.now();
+            }
         }
-    }
 
-    // Red ball chases player
-    redBalls.forEach((redBall) => {
-        const direction = new THREE.Vector3();
-        direction.subVectors(player.position, redBall.position).normalize();
-        redBall.position.addScaledVector(direction, playerSpeed * 1.25);
-        handleCollisionWithRedBall(redBall);
-    });
+        checkCollisionBetweenBalls(player, enemy);
+        checkCollisionWithWalls(player);
+        checkCollisionWithWalls(enemy);
+
+        redBalls.forEach((redBall) => {
+            const redBallDirection = new THREE.Vector3();
+            redBallDirection.subVectors(player.position, redBall.position).normalize();
+            redBall.position.addScaledVector(redBallDirection, playerSpeed * 1.25);
+
+            checkCollisionBetweenBalls(player, redBall);
+            checkCollisionWithWalls(redBall);
+            handleCollisionWithRedBall(redBall);
+        });
+    }
 
     controls.update();
     renderer.render(scene, camera);
