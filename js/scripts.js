@@ -142,6 +142,11 @@ function movePlayer(delta) {
     // Check for collision with enemy
     if (checkCollision(newPosition, player.geometry.parameters.radius, enemy.position, enemy.geometry.parameters.radius)) {
         resolveCollision(player, enemy);
+        if (canSpawnRedBall) {
+            canSpawnRedBall = false;
+            setTimeout(() => { canSpawnRedBall = true; }, redBallSpawnInterval);
+            spawnRedBall();
+        }
         return; // Prevent movement if collision detected
     }
 
@@ -179,13 +184,6 @@ function animate() {
 
     // Check and resolve collisions for all balls
     resolveBallCollisions();
-
-    // Spawn red ball if conditions are met
-    if (canSpawnRedBall && enemy.position.distanceTo(player.position) <= 10) {
-        canSpawnRedBall = false;
-        spawnRedBall();
-        setTimeout(() => { canSpawnRedBall = true; }, redBallSpawnInterval);
-    }
 
     // Red balls chase player
     redBalls.forEach(redBall => {
