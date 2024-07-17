@@ -12,6 +12,7 @@ let isSwallowing = false;
 let shrinkInterval;
 const collisionTolerance = 0.1;
 const redBallSpawnDelay = 15000; // 15 seconds
+let collisionStartTime = 0;
 
 function init() {
     scene = new THREE.Scene();
@@ -218,9 +219,9 @@ function animate() {
     const isColliding = checkCollisionBetweenBalls(player, enemy);
 
     const currentTime = Date.now();
-    if (isColliding && currentTime - lastRedBallSpawnTime > redBallSpawnDelay) {
+    if (isColliding && currentTime - collisionStartTime > redBallSpawnDelay) {
         spawnRedBall();
-        lastRedBallSpawnTime = currentTime;
+        collisionStartTime = currentTime;
     }
 
     // Enemy chases player
