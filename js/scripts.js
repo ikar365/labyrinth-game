@@ -174,6 +174,9 @@ function animate() {
         enemy.position.addScaledVector(direction, enemySpeed);
     }
 
+    // Check and resolve collisions for all balls
+    resolveBallCollisions();
+
     // Spawn red ball if conditions are met
     if (canSpawnRedBall && enemy.position.distanceTo(player.position) <= 10) {
         canSpawnRedBall = false;
@@ -201,6 +204,36 @@ function animate() {
     controls.target.copy(player.position);
     controls.update();
     renderer.render(scene, camera);
+}
+
+function resolveBallCollisions() {
+    // Check for collision between player and enemy
+    if (checkCollision(player.position, player.geometry.parameters.radius, enemy.position, enemy.geometry.parameters.radius)) {
+        resolveCollision(player, enemy);
+    }
+
+    // Check for collision between player and red balls
+    for (const redBall of redBalls) {
+        if (checkCollision(player.position, player.geometry.parameters.radius, redBall.position, redBall.geometry.parameters.radius)) {
+            resolveCollision(player, redBall);
+        }
+    }
+
+    // Check for collision between enemy and red balls
+    for (const redBall of redBalls) {
+        if (checkCollision(enemy.position, enemy.geometry.parameters.radius, redBall.position, redBall.geometry.parameters.radius)) {
+            resolveCollision(enemy, redBall);
+        }
+    }
+
+    // Check for collision between red balls
+    for (let i = 0; i < redBalls.length; i++) {
+        for (let j = i + 1; j < redBalls.length; j++) {
+            if (checkCollision(redBalls[i].position, redBalls[i].geometry.parameters.radius, redBalls[j].position, redBalls[j].geometry.parameters.radius)) {
+                resolveCollision(redBalls[i], redBalls[j]);
+            }
+        }
+    }
 }
 
 init();
