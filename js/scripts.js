@@ -75,6 +75,13 @@ function init() {
     player.position.set(0, 10, 0);
     scene.add(player);
 
+    // Player sensor
+    const playerSensorGeometry = new THREE.SphereGeometry(13, 32, 32); // 3 pixels thick sensor field
+    const playerSensorMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0 });
+    const playerSensor = new THREE.Mesh(playerSensorGeometry, playerSensorMaterial);
+    playerSensor.position.set(0, 10, 0);
+    scene.add(playerSensor);
+
     // Enemy
     const enemyGeometry = new THREE.SphereGeometry(25, 32, 32);
     const enemyMaterial = new THREE.MeshStandardMaterial({
@@ -86,6 +93,13 @@ function init() {
     enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
     enemy.position.set(100, 25, 100);
     scene.add(enemy);
+
+    // Enemy sensor
+    const enemySensorGeometry = new THREE.SphereGeometry(28, 32, 32); // 3 pixels thick sensor field
+    const enemySensorMaterial = new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true, opacity: 0 });
+    const enemySensor = new THREE.Mesh(enemySensorGeometry, enemySensorMaterial);
+    enemySensor.position.set(100, 25, 100);
+    scene.add(enemySensor);
 
     // Add lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -129,6 +143,9 @@ function movePlayer(delta) {
 
     const newPosition = player.position.clone().add(delta);
 
+    // Update sensor position
+    playerSensor.position.copy(newPosition);
+
     // Check for collision with walls
     if (newPosition.x - player.geometry.parameters.radius < -2500 ||
         newPosition.x + player.geometry.parameters.radius > 2500 ||
@@ -139,8 +156,8 @@ function movePlayer(delta) {
         return; // Prevent movement if collision detected
     }
 
-    // Check for collision with enemy
-    if (checkCollision(newPosition, player.geometry.parameters.radius, enemy.position, enemy.geometry.parameters.radius)) {
+    // Check for collision with enemy sensor
+    if (checkCollision(playerSensor.position, playerSensor.geometry.parameters.radius, enemySensor.position, enemySensor.geometry.parameters.radius)) {
         resolveCollision(player, enemy);
         if (canSpawnRedBall) {
             console.log("Spawning red ball...");
@@ -183,29 +200,24 @@ function animate() {
         enemy.position.addScaledVector(direction, enemySpeed);
     }
 
-    // Check and resolve collisions for all balls
+    // Update enemy sensor position
+    enemySensor.position.copy(enemy.position);
+
+    // Check and resolve ball collisions
     resolveBallCollisions();
 
     // Red balls chase player
-    redBalls.forEach(redBall => {
-        if (redBall.position.distanceTo(player.position) > redBall.geometry.parameters.radius + player.geometry.parameters.radius) {
-            const direction = new THREE.Vector3();
-            direction.subVectors(player.position, redBall.position).normalize();
-            redBall.position.addScaledVector(direction, redBallSpeed);
-        } else {
-            // Red ball stops and shrinks player
+    for (const redBall of redBalls) {
+        const direction = new THREE.Vector3();
+        direction.subVectors(player.position, redBall.position).normalize();
+        redBall.position.addScaledVector(direction, redBallSpeed);
+
+        // Check for collision with player
+        if (checkCollision(player.position, player.geometry.parameters.radius, redBall.position, redBall.geometry.parameters.radius)) {
+            resolveCollision(player, redBall);
             player.geometry = new THREE.SphereGeometry(player.geometry.parameters.radius - 1, 32, 32);
             redBall.geometry = new THREE.SphereGeometry(redBall.geometry.parameters.radius + 1, 32, 32);
-
-            if (player.geometry.parameters.radius < 7) {
-                // Red balls pull away
-                redBalls.forEach(rb => {
-                    const awayDirection = new THREE.Vector3();
-                    awayDirection.subVectors(rb.position, player.position).normalize();
-                    rb.position.addScaledVector(awayDirection, redBallSpeed);
-                });
-
-                // Orange ball chases to swallow
+            if (player.geometry.parameters.radius <= 7) {
                 isSwallowing = true;
                 setTimeout(() => {
                     const swallowInterval = setInterval(() => {
@@ -229,7 +241,7 @@ function animate() {
                 }, 100);
             }
         }
-    });
+    }
 
     controls.update();
     renderer.render(scene, camera);
