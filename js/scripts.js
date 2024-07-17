@@ -3,7 +3,7 @@ import { OrbitControls } from './libs/OrbitControls.js';
 import { CSG } from './libs/CSG.js';
 
 let scene, camera, renderer, controls;
-let player, enemy, redBalls = [];
+let player, enemy, playerSensor, enemySensor, redBalls = [];
 let playerSpeed = 0.9;
 let enemySpeed = playerSpeed * 0.34;
 let redBallSpeed = playerSpeed * 1.25;
@@ -78,7 +78,7 @@ function init() {
     // Player sensor
     const playerSensorGeometry = new THREE.SphereGeometry(13, 32, 32); // 3 pixels thick sensor field
     const playerSensorMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0 });
-    const playerSensor = new THREE.Mesh(playerSensorGeometry, playerSensorMaterial);
+    playerSensor = new THREE.Mesh(playerSensorGeometry, playerSensorMaterial);
     playerSensor.position.set(0, 10, 0);
     scene.add(playerSensor);
 
@@ -97,7 +97,7 @@ function init() {
     // Enemy sensor
     const enemySensorGeometry = new THREE.SphereGeometry(28, 32, 32); // 3 pixels thick sensor field
     const enemySensorMaterial = new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true, opacity: 0 });
-    const enemySensor = new THREE.Mesh(enemySensorGeometry, enemySensorMaterial);
+    enemySensor = new THREE.Mesh(enemySensorGeometry, enemySensorMaterial);
     enemySensor.position.set(100, 25, 100);
     scene.add(enemySensor);
 
