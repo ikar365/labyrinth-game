@@ -9,6 +9,7 @@ let enemySpeed = playerSpeed * 0.34;
 let redBallSpeed = playerSpeed * 1.25;
 let redBallSpawnInterval = 15000; // 15 seconds
 let canSpawnRedBall = true;
+let isSwallowing = false;
 
 function init() {
     scene = new THREE.Scene();
@@ -124,6 +125,8 @@ function onDocumentKeyDown(event) {
 }
 
 function movePlayer(delta) {
+    if (isSwallowing) return;
+
     const newPosition = player.position.clone().add(delta);
 
     // Check for collision with walls
@@ -197,11 +200,43 @@ function animate() {
             const direction = new THREE.Vector3();
             direction.subVectors(player.position, redBall.position).normalize();
             redBall.position.addScaledVector(direction, redBallSpeed);
+        } else {
+            // Red ball stops and shrinks player
+            player.geometry = new THREE.SphereGeometry(player.geometry.parameters.radius - 1, 32, 32);
+            redBall.geometry = new THREE.SphereGeometry(redBall.geometry.parameters.radius + 1, 32, 32);
+
+            if (player.geometry.parameters.radius < 7) {
+                // Red balls pull away
+                redBalls.forEach(rb => {
+                    const awayDirection = new THREE.Vector3();
+                    awayDirection.subVectors(rb.position, player.position).normalize();
+                    rb.position.addScaledVector(awayDirection, redBallSpeed);
+                });
+
+                // Orange ball chases to swallow
+                isSwallowing = true;
+                enemySpeed = playerSpeed * 3;
+                const direction = new THREE.Vector3();
+                direction.subVectors(player.position, enemy.position).normalize();
+                enemy.position.addScaledVector(direction, enemySpeed);
+
+                if (enemy.position.distanceTo(player.position) < enemy.geometry.parameters.radius + player.geometry.parameters.radius) {
+                    // Swallowing sequence
+                    player.position.copy(enemy.position);
+                    const swallowInterval = setInterval(() => {
+                        player.geometry.parameters.radius -= 1;
+                        if (player.geometry.parameters.radius <= 0) {
+                            clearInterval(swallowInterval);
+                            scene.remove(player);
+                            enemy.geometry.parameters.radius *= 3;
+                            isSwallowing = false;
+                        }
+                    }, 100);
+                }
+            }
         }
     });
 
-    // Update camera to follow player without changing the angle
-    controls.target.copy(player.position);
     controls.update();
     renderer.render(scene, camera);
 }
