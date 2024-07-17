@@ -188,7 +188,7 @@ function animate() {
 
     // Red balls chase player
     redBalls.forEach(redBall => {
-        if (redBall.position.distanceTo(player.position) > 10) {
+        if (redBall.position.distanceTo(player.position) > redBall.geometry.parameters.radius + player.geometry.parameters.radius) {
             const direction = new THREE.Vector3();
             direction.subVectors(player.position, redBall.position).normalize();
             redBall.position.addScaledVector(direction, redBallSpeed);
