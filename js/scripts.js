@@ -143,6 +143,7 @@ function movePlayer(delta) {
     if (checkCollision(newPosition, player.geometry.parameters.radius, enemy.position, enemy.geometry.parameters.radius)) {
         resolveCollision(player, enemy);
         if (canSpawnRedBall) {
+            console.log("Spawning red ball...");
             canSpawnRedBall = false;
             setTimeout(() => { canSpawnRedBall = true; }, redBallSpawnInterval);
             spawnRedBall();
@@ -207,23 +208,24 @@ function animate() {
                 // Orange ball chases to swallow
                 isSwallowing = true;
                 enemySpeed = playerSpeed * 3;
-                const direction = new THREE.Vector3();
-                direction.subVectors(player.position, enemy.position).normalize();
-                enemy.position.addScaledVector(direction, enemySpeed);
+                const swallowInterval = setInterval(() => {
+                    const direction = new THREE.Vector3();
+                    direction.subVectors(player.position, enemy.position).normalize();
+                    enemy.position.addScaledVector(direction, enemySpeed);
 
-                if (enemy.position.distanceTo(player.position) < enemy.geometry.parameters.radius + player.geometry.parameters.radius) {
-                    // Swallowing sequence
-                    player.position.copy(enemy.position);
-                    const swallowInterval = setInterval(() => {
-                        player.geometry.parameters.radius -= 1;
-                        if (player.geometry.parameters.radius <= 0) {
-                            clearInterval(swallowInterval);
-                            scene.remove(player);
-                            enemy.geometry.parameters.radius *= 3;
-                            isSwallowing = false;
-                        }
-                    }, 100);
-                }
+                    if (enemy.position.distanceTo(player.position) < enemy.geometry.parameters.radius + player.geometry.parameters.radius) {
+                        clearInterval(swallowInterval);
+                        const swallowSequence = setInterval(() => {
+                            player.geometry.parameters.radius -= 1;
+                            if (player.geometry.parameters.radius <= 0) {
+                                clearInterval(swallowSequence);
+                                scene.remove(player);
+                                enemy.geometry.parameters.radius *= 3;
+                                isSwallowing = false;
+                            }
+                        }, 100);
+                    }
+                }, 100);
             }
         }
     });
