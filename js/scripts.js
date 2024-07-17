@@ -137,18 +137,31 @@ function movePlayer(delta) {
     }
 
     // Check for collision with enemy
-    if (newPosition.distanceTo(enemy.position) < player.geometry.parameters.radius + enemy.geometry.parameters.radius) {
+    if (checkCollision(newPosition, player.geometry.parameters.radius, enemy.position, enemy.geometry.parameters.radius)) {
+        resolveCollision(player, enemy);
         return; // Prevent movement if collision detected
     }
 
     // Check for collision with red balls
     for (const redBall of redBalls) {
-        if (newPosition.distanceTo(redBall.position) < player.geometry.parameters.radius + redBall.geometry.parameters.radius) {
+        if (checkCollision(newPosition, player.geometry.parameters.radius, redBall.position, redBall.geometry.parameters.radius)) {
+            resolveCollision(player, redBall);
             return; // Prevent movement if collision detected
         }
     }
 
     player.position.copy(newPosition);
+}
+
+function checkCollision(position1, radius1, position2, radius2) {
+    return position1.distanceTo(position2) < radius1 + radius2;
+}
+
+function resolveCollision(ball1, ball2) {
+    const overlap = ball1.geometry.parameters.radius + ball2.geometry.parameters.radius - ball1.position.distanceTo(ball2.position);
+    const direction = new THREE.Vector3().subVectors(ball1.position, ball2.position).normalize();
+    ball1.position.addScaledVector(direction, overlap / 2);
+    ball2.position.addScaledVector(direction, -overlap / 2);
 }
 
 function animate() {
