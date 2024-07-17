@@ -7,11 +7,11 @@ let player, enemy, enemySensor;
 let playerSpeed = 0.9;
 let enemySpeed = playerSpeed * 0.34;
 let redBalls = [];
-let redBallSpawnDelay = 15000; // 15 seconds
 let lastRedBallSpawnTime = 0;
 let isSwallowing = false;
 let shrinkInterval;
 const collisionTolerance = 0.1;
+const redBallSpawnDelay = 15000; // 15 seconds
 
 function init() {
     scene = new THREE.Scene();
