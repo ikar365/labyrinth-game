@@ -140,11 +140,11 @@ function spawnRedBall() {
 }
 
 function handleCollisionWithRedBall(redBall) {
-    const shrinkRate = 0.1; // shrink/grow by 0.1 pixel every second
+    const shrinkRate = 1; // shrink/grow by 1 pixel every second
 
     if (!shrinkInterval) {
         shrinkInterval = setInterval(() => {
-            if (redBall.position.distanceTo(player.position) < 35) {
+            if (redBall.position.distanceTo(player.position) < 25) {
                 const newPlayerRadius = Math.max(0.1, player.geometry.parameters.radius - shrinkRate);
                 player.geometry = new THREE.SphereGeometry(newPlayerRadius, 32, 32);
 
@@ -161,7 +161,7 @@ function handleCollisionWithRedBall(redBall) {
                     });
 
                     enemySpeed = playerSpeed * 3;
-                    if (enemy.position.distanceTo(player.position) < 35) {
+                    if (enemy.position.distanceTo(player.position) < 25) {
                         playerSpeed = 0;
                         isSwallowing = true;
                         setTimeout(() => {
@@ -187,7 +187,7 @@ function animate() {
     enemySensor.position.copy(enemy.position);
 
     // Enemy chases player
-    if (!isSwallowing && enemy.position.distanceTo(player.position) > 35) {
+    if (!isSwallowing && enemy.position.distanceTo(player.position) > 25) {
         const direction = new THREE.Vector3();
         direction.subVectors(player.position, enemy.position).normalize();
         enemy.position.addScaledVector(direction, enemySpeed);
@@ -195,7 +195,7 @@ function animate() {
     }
 
     // Check for collision between player and enemy sensor
-    if (enemySensor.position.distanceTo(player.position) < 35) {
+    if (enemySensor.position.distanceTo(player.position) < 25) {
         if (Date.now() - lastRedBallSpawnTime > redBallSpawnDelay) {
             spawnRedBall();
             lastRedBallSpawnTime = Date.now();
@@ -209,6 +209,12 @@ function animate() {
         redBall.position.addScaledVector(direction, playerSpeed * 1.25);
         handleCollisionWithRedBall(redBall);
     });
+
+    // Update camera to follow player without changing the angle
+    const cameraOffset = new THREE.Vector3(0, 50, 200);
+    const newCameraPosition = player.position.clone().add(cameraOffset);
+    camera.position.lerp(newCameraPosition, 0.05);
+    camera.lookAt(player.position);
 
     controls.update();
     renderer.render(scene, camera);
