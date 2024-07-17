@@ -176,7 +176,7 @@ function animate() {
     requestAnimationFrame(animate);
 
     // Enemy chases player
-    if (!isSwallowing && enemy.position.distanceTo(player.position) > 10) {
+    if (!isSwallowing && !checkCollision(player.position, player.geometry.parameters.radius, enemy.position, enemy.geometry.parameters.radius)) {
         const direction = new THREE.Vector3();
         direction.subVectors(player.position, enemy.position).normalize();
         enemy.position.addScaledVector(direction, enemySpeed);
