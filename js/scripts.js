@@ -207,40 +207,41 @@ function checkCollisionBetweenBalls(ball1, ball2) {
         direction.subVectors(ball1.position, ball2.position).normalize();
         ball1.position.addScaledVector(direction, overlap / 2);
         ball2.position.addScaledVector(direction, -overlap / 2);
+        return true;
     }
+    return false;
 }
 
 function animate() {
     requestAnimationFrame(animate);
 
+    const isColliding = checkCollisionBetweenBalls(player, enemy);
+
+    const currentTime = Date.now();
+    if (isColliding && currentTime - lastRedBallSpawnTime > redBallSpawnDelay) {
+        spawnRedBall();
+        lastRedBallSpawnTime = currentTime;
+    }
+
     // Enemy chases player
-    if (!isSwallowing) {
+    if (!isSwallowing && !isColliding) {
         const direction = new THREE.Vector3();
         direction.subVectors(player.position, enemy.position).normalize();
         enemy.position.addScaledVector(direction, enemySpeed);
         enemySensor.position.copy(enemy.position);
-
-        if (enemySensor.position.distanceTo(player.position) < 26) {
-            if (Date.now() - lastRedBallSpawnTime > redBallSpawnDelay) {
-                spawnRedBall();
-                lastRedBallSpawnTime = Date.now();
-            }
-        }
-
-        checkCollisionBetweenBalls(player, enemy);
-        checkCollisionWithWalls(player);
-        checkCollisionWithWalls(enemy);
-
-        redBalls.forEach((redBall) => {
-            const redBallDirection = new THREE.Vector3();
-            redBallDirection.subVectors(player.position, redBall.position).normalize();
-            redBall.position.addScaledVector(redBallDirection, playerSpeed * 1.25);
-
-            checkCollisionBetweenBalls(player, redBall);
-            checkCollisionWithWalls(redBall);
-            handleCollisionWithRedBall(redBall);
-        });
     }
+
+    redBalls.forEach((redBall) => {
+        const redBallDirection = new THREE.Vector3();
+        redBallDirection.subVectors(player.position, redBall.position).normalize();
+        redBall.position.addScaledVector(redBallDirection, playerSpeed * 1.25);
+
+        checkCollisionWithWalls(redBall);
+        handleCollisionWithRedBall(redBall);
+    });
+
+    checkCollisionWithWalls(player);
+    checkCollisionWithWalls(enemy);
 
     controls.update();
     renderer.render(scene, camera);
