@@ -171,7 +171,7 @@ function animate() {
     requestAnimationFrame(animate);
 
     // Enemy chases player
-    if (enemy.position.distanceTo(player.position) > 10) {
+    if (!isSwallowing && enemy.position.distanceTo(player.position) > 10) {
         const direction = new THREE.Vector3();
         direction.subVectors(player.position, enemy.position).normalize();
         enemy.position.addScaledVector(direction, enemySpeed);
@@ -183,15 +183,8 @@ function animate() {
     // Spawn red ball if conditions are met
     if (canSpawnRedBall && enemy.position.distanceTo(player.position) <= 10) {
         canSpawnRedBall = false;
-        setTimeout(() => {
-            const redBallGeometry = new THREE.SphereGeometry(15, 32, 32);
-            const redBallMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0x331111, shininess: 100 });
-            const redBall = new THREE.Mesh(redBallGeometry, redBallMaterial);
-            redBall.position.copy(enemy.position);
-            redBalls.push(redBall);
-            scene.add(redBall);
-            canSpawnRedBall = true;
-        }, redBallSpawnInterval);
+        spawnRedBall();
+        setTimeout(() => { canSpawnRedBall = true; }, redBallSpawnInterval);
     }
 
     // Red balls chase player
@@ -239,6 +232,15 @@ function animate() {
 
     controls.update();
     renderer.render(scene, camera);
+}
+
+function spawnRedBall() {
+    const redBallGeometry = new THREE.SphereGeometry(15, 32, 32);
+    const redBallMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0x111111, shininess: 100 });
+    const redBall = new THREE.Mesh(redBallGeometry, redBallMaterial);
+    redBall.position.copy(enemy.position);
+    redBalls.push(redBall);
+    scene.add(redBall);
 }
 
 function resolveBallCollisions() {
