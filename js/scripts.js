@@ -204,9 +204,9 @@ function checkCollisionBetweenBalls(ball1, ball2) {
     if (distance < minDistance) {
         const overlap = minDistance - distance + collisionTolerance;
         const direction = new THREE.Vector3();
-        direction.subVectors(ball1.position, ball2.position).normalize();
-        ball1.position.addScaledVector(direction, overlap / 2);
-        ball2.position.addScaledVector(direction, -overlap / 2);
+        direction.subVectors(ball2.position, ball1.position).normalize();
+        ball2.position.addScaledVector(direction, overlap);
+
         return true;
     }
     return false;
