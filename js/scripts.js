@@ -211,10 +211,6 @@ function animate() {
         handleCollisionWithRedBall(redBall);
     });
 
-    // Maintain camera position and angle
-    const newCameraPosition = new THREE.Vector3().copy(player.position);
-    controls.target.lerp(newCameraPosition, 0.05);
-
     controls.update();
     renderer.render(scene, camera);
 }
