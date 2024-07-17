@@ -34,7 +34,7 @@ function init() {
     floorTexture.repeat.set(50, 50);
     floorTexture.anisotropy = 16;
     const floorGeometry = new THREE.PlaneGeometry(5000, 5000);
-    const floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture, transparent: true, opacity: 0.5 });
+    const floorMaterial = new THREE.MeshStandardMaterial({ map: floorTexture, transparent: true, opacity: 0.5 });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floor.rotation.x = - Math.PI / 2;
     scene.add(floor);
@@ -44,7 +44,7 @@ function init() {
     wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
     wallTexture.repeat.set(50, 10);
     wallTexture.anisotropy = 16;
-    const wallMaterial = new THREE.MeshBasicMaterial({ map: wallTexture });
+    const wallMaterial = new THREE.MeshStandardMaterial({ map: wallTexture });
     const wallHeight = 5000;
     const wallGeometry = new THREE.PlaneGeometry(5000, wallHeight);
 
@@ -76,13 +76,11 @@ function init() {
 
     // Enemy
     const enemyGeometry = new THREE.SphereGeometry(25, 32, 32);
-    const enemyMaterial = new THREE.MeshPhongMaterial({
+    const enemyMaterial = new THREE.MeshStandardMaterial({
         color: 0xffa500,
         emissive: 0x111111,
-        shininess: 100,
-        transparent: true,
-        opacity: 0.8,
-        refractionRatio: 0.98
+        roughness: 0.1,
+        metalness: 0.9
     });
     enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
     enemy.position.set(100, 25, 100);
