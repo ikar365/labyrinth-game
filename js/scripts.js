@@ -207,24 +207,25 @@ function animate() {
 
                 // Orange ball chases to swallow
                 isSwallowing = true;
-                enemySpeed = playerSpeed * 3;
-                const swallowInterval = setInterval(() => {
-                    const direction = new THREE.Vector3();
-                    direction.subVectors(player.position, enemy.position).normalize();
-                    enemy.position.addScaledVector(direction, enemySpeed);
+                setTimeout(() => {
+                    const swallowInterval = setInterval(() => {
+                        const direction = new THREE.Vector3();
+                        direction.subVectors(player.position, enemy.position).normalize();
+                        enemy.position.addScaledVector(direction, enemySpeed * 3);
 
-                    if (enemy.position.distanceTo(player.position) < enemy.geometry.parameters.radius + player.geometry.parameters.radius) {
-                        clearInterval(swallowInterval);
-                        const swallowSequence = setInterval(() => {
-                            player.geometry.parameters.radius -= 1;
-                            if (player.geometry.parameters.radius <= 0) {
-                                clearInterval(swallowSequence);
-                                scene.remove(player);
-                                enemy.geometry.parameters.radius *= 3;
-                                isSwallowing = false;
-                            }
-                        }, 100);
-                    }
+                        if (enemy.position.distanceTo(player.position) < enemy.geometry.parameters.radius + player.geometry.parameters.radius) {
+                            clearInterval(swallowInterval);
+                            const swallowSequence = setInterval(() => {
+                                player.geometry = new THREE.SphereGeometry(player.geometry.parameters.radius - 1, 32, 32);
+                                if (player.geometry.parameters.radius <= 0) {
+                                    clearInterval(swallowSequence);
+                                    scene.remove(player);
+                                    enemy.geometry = new THREE.SphereGeometry(enemy.geometry.parameters.radius * 3, 32, 32);
+                                    isSwallowing = false;
+                                }
+                            }, 100);
+                        }
+                    }, 100);
                 }, 100);
             }
         }
