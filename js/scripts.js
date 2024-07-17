@@ -17,6 +17,7 @@ function init() {
     scene.background = new THREE.Color(0x333444);
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+    camera.position.set(0, 50, 200);
 
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -210,11 +211,9 @@ function animate() {
         handleCollisionWithRedBall(redBall);
     });
 
-    // Update camera to follow player without changing the angle
-    const cameraOffset = new THREE.Vector3(0, 50, 200);
-    const newCameraPosition = player.position.clone().add(cameraOffset);
-    camera.position.lerp(newCameraPosition, 0.05);
-    camera.lookAt(player.position);
+    // Maintain camera position and angle
+    const newCameraPosition = new THREE.Vector3().copy(player.position);
+    controls.target.lerp(newCameraPosition, 0.05);
 
     controls.update();
     renderer.render(scene, camera);
