@@ -109,18 +109,46 @@ function onWindowResize() {
 function onDocumentKeyDown(event) {
     const keyCode = event.which;
     if (keyCode === 87) { // W
-        player.position.z -= playerSpeed;
+        movePlayer(new THREE.Vector3(0, 0, -playerSpeed));
     } else if (keyCode === 83) { // S
-        player.position.z += playerSpeed;
+        movePlayer(new THREE.Vector3(0, 0, playerSpeed));
     } else if (keyCode === 65) { // A
-        player.position.x -= playerSpeed;
+        movePlayer(new THREE.Vector3(-playerSpeed, 0, 0));
     } else if (keyCode === 68) { // D
-        player.position.x += playerSpeed;
+        movePlayer(new THREE.Vector3(playerSpeed, 0, 0));
     } else if (keyCode === 32) { // Space
-        player.position.y += playerSpeed;
+        movePlayer(new THREE.Vector3(0, playerSpeed, 0));
     } else if (keyCode === 88) { // X
-        player.position.y -= playerSpeed;
+        movePlayer(new THREE.Vector3(0, -playerSpeed, 0));
     }
+}
+
+function movePlayer(delta) {
+    const newPosition = player.position.clone().add(delta);
+
+    // Check for collision with walls
+    if (newPosition.x - player.geometry.parameters.radius < -2500 ||
+        newPosition.x + player.geometry.parameters.radius > 2500 ||
+        newPosition.z - player.geometry.parameters.radius < -2500 ||
+        newPosition.z + player.geometry.parameters.radius > 2500 ||
+        newPosition.y - player.geometry.parameters.radius < 0 ||
+        newPosition.y + player.geometry.parameters.radius > 5000) {
+        return; // Prevent movement if collision detected
+    }
+
+    // Check for collision with enemy
+    if (newPosition.distanceTo(enemy.position) < player.geometry.parameters.radius + enemy.geometry.parameters.radius) {
+        return; // Prevent movement if collision detected
+    }
+
+    // Check for collision with red balls
+    for (const redBall of redBalls) {
+        if (newPosition.distanceTo(redBall.position) < player.geometry.parameters.radius + redBall.geometry.parameters.radius) {
+            return; // Prevent movement if collision detected
+        }
+    }
+
+    player.position.copy(newPosition);
 }
 
 function animate() {
