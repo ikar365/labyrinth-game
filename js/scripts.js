@@ -3,12 +3,14 @@ import { OrbitControls } from './libs/OrbitControls.js';
 import { CSG } from './libs/CSG.js';
 
 let scene, camera, renderer, controls;
-let player, enemy, magentaPlayer, isGameOver = false;
+let player, enemy, isGameOver = false;
 let redBalls = [];
 let playerSpeed = 0.6;
 let enemySpeed = 0.34 * playerSpeed;
 let redBallSpeed = 1.25 * playerSpeed;
 let collisionTimeout = false;
+let blueBallShrinksThreshold = 7;
+let redBallCollision = false;
 
 function init() {
     scene = new THREE.Scene();
@@ -110,18 +112,20 @@ function onWindowResize() {
 
 function onDocumentKeyDown(event) {
     const keyCode = event.which;
-    if (keyCode === 87) { // W
-        player.position.z -= playerSpeed;
-    } else if (keyCode === 83) { // S
-        player.position.z += playerSpeed;
-    } else if (keyCode === 65) { // A
-        player.position.x -= playerSpeed;
-    } else if (keyCode === 68) { // D
-        player.position.x += playerSpeed;
-    } else if (keyCode === 32) { // Space
-        player.position.y += playerSpeed;
-    } else if (keyCode === 88) { // X
-        player.position.y -= playerSpeed;
+    if (!isGameOver) {
+        if (keyCode === 87) { // W
+            player.position.z -= playerSpeed;
+        } else if (keyCode === 83) { // S
+            player.position.z += playerSpeed;
+        } else if (keyCode === 65) { // A
+            player.position.x -= playerSpeed;
+        } else if (keyCode === 68) { // D
+            player.position.x += playerSpeed;
+        } else if (keyCode === 32) { // Space
+            player.position.y += playerSpeed;
+        } else if (keyCode === 88) { // X
+            player.position.y -= playerSpeed;
+        }
     }
 }
 
@@ -143,25 +147,15 @@ function checkCollision(object1, object2) {
 
 function handleGameOver() {
     isGameOver = true;
-    const magentaPlayerGeometry = new THREE.SphereGeometry(10, 32, 32);
-    const magentaPlayerMaterial = new THREE.MeshPhongMaterial({ color: 0xff00ff, emissive: 0x111111, shininess: 100 });
-    magentaPlayer = new THREE.Mesh(magentaPlayerGeometry, magentaPlayerMaterial);
-    magentaPlayer.position.copy(player.position);
-    scene.add(magentaPlayer);
 
-    enemy.scale.setScalar(enemy.scale.x * 2);
-
-    scene.remove(player);
-
-    // Reset player state
-    player = magentaPlayer;
-    playerSpeed = 0.6;
-
-    // Reset enemy state
-    enemy.userData.collided = false;
-
-    // Chase the magenta player
-    animate();
+    let swallowInterval = setInterval(() => {
+        enemy.geometry = new THREE.SphereGeometry(enemy.geometry.parameters.radius, 32, 32, 0, Math.PI * 2, 0, Math.PI * 2 * (1 - player.scale.x / 10));
+        if (player.scale.x <= 0.1) {
+            clearInterval(swallowInterval);
+            scene.remove(player);
+            enemy.geometry = new THREE.SphereGeometry(enemy.geometry.parameters.radius * 3, 32, 32);
+        }
+    }, 100);
 }
 
 function animate() {
@@ -172,23 +166,27 @@ function animate() {
     requestAnimationFrame(animate);
 
     // Enemy chases player
-    if (!enemy.userData.collided) {
+    if (!enemy.userData.collided && !redBallCollision) {
         const direction = new THREE.Vector3();
         direction.subVectors(player.position, enemy.position).normalize();
         enemy.position.addScaledVector(direction, enemySpeed);
     }
 
     redBalls.forEach(redBall => {
-        const direction = new THREE.Vector3();
-        direction.subVectors(player.position, redBall.position).normalize();
-        redBall.position.addScaledVector(direction, redBallSpeed);
+        if (!redBall.userData.collided) {
+            const direction = new THREE.Vector3();
+            direction.subVectors(player.position, redBall.position).normalize();
+            redBall.position.addScaledVector(direction, redBallSpeed);
 
-        // Check collision with player
-        if (checkCollision(redBall, player)) {
-            redBall.position.addScaledVector(direction.negate(), 10); // Pull away
-
-            if (player.scale.x <= 0.1) { // If player size is below threshold
-                handleGameOver();
+            // Check collision with player
+            if (checkCollision(redBall, player)) {
+                redBall.userData.collided = true;
+                player.scale.setScalar(player.scale.x - 0.1);
+                if (player.scale.x <= blueBallShrinksThreshold) {
+                    redBallCollision = true;
+                    redBallSpeed = 0;
+                    enemySpeed = 3 * playerSpeed;
+                }
             }
         }
     });
@@ -199,6 +197,11 @@ function animate() {
         setTimeout(() => {
             enemy.userData.collided = false;
         }, 30000); // Enemy resumes movement after 30 seconds
+    }
+
+    // If blue ball size is less than threshold
+    if (player.scale.x <= blueBallShrinksThreshold && !isGameOver) {
+        handleGameOver();
     }
 
     // Update camera to follow player without changing the angle
